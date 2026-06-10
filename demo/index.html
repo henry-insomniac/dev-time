@@ -1,0 +1,1159 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dev Time - 风险工作台 Demo</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap");
+
+      :root {
+        color-scheme: light;
+        --bg: #f2f1f9;
+        --ink: #232324;
+        --muted: #686878;
+        --soft: #a4a4b7;
+        --card: #ffffff;
+        --lavender: #e7e3fb;
+        --lavender-2: #d8d1f6;
+        --blue: #0725ff;
+        --blue-soft: #e6eaff;
+        --purple: #a19dfe;
+        --purple-deep: #6f5af7;
+        --mint: #b2fbb0;
+        --mint-deep: #2d7c49;
+        --yellow: #fce575;
+        --coral: #c76a67;
+        --coral-soft: #ffe8e5;
+        --line: rgba(35, 35, 36, 0.1);
+        --shadow: 0 24px 70px rgba(35, 35, 36, 0.11);
+        --shadow-sm: 0 12px 30px rgba(35, 35, 36, 0.08);
+        --r-xl: 34px;
+        --r-lg: 26px;
+        --r-md: 18px;
+        --r-sm: 14px;
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(circle at 12% 5%, rgba(161, 157, 254, 0.42), transparent 28rem),
+          radial-gradient(circle at 92% 0%, rgba(178, 251, 176, 0.45), transparent 28rem),
+          var(--bg);
+        color: var(--ink);
+        font-family: "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        letter-spacing: 0;
+      }
+
+      button {
+        color: inherit;
+        font: inherit;
+      }
+
+      svg {
+        display: block;
+      }
+
+      .page {
+        width: min(1360px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 22px 0 42px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 48px;
+        height: 48px;
+        place-items: center;
+        border: 1px solid rgba(7, 37, 255, 0.18);
+        background: var(--card);
+        border-radius: 18px;
+        box-shadow: var(--shadow-sm);
+        color: var(--blue);
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-family: "Space Grotesk", "Manrope", sans-serif;
+        font-size: 22px;
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      .brand p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .nav {
+        display: flex;
+        gap: 6px;
+        padding: 6px;
+        border: 1px solid rgba(35, 35, 36, 0.08);
+        background: rgba(255, 255, 255, 0.62);
+        border-radius: 999px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+      }
+
+      .nav button {
+        padding: 9px 14px;
+        border: 0;
+        background: transparent;
+        border-radius: 999px;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .nav button.active {
+        background: var(--ink);
+        color: white;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 15px;
+        border: 1px solid rgba(35, 35, 36, 0.1);
+        background: rgba(255, 255, 255, 0.76);
+        border-radius: 15px;
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+        cursor: pointer;
+        font-weight: 800;
+        transition:
+          transform 160ms var(--ease),
+          box-shadow 160ms var(--ease),
+          background 160ms var(--ease);
+      }
+
+      .btn:hover {
+        box-shadow: var(--shadow-sm);
+        transform: translateY(-1px);
+      }
+
+      .btn.primary {
+        border-color: transparent;
+        background: var(--blue);
+        color: white;
+        box-shadow: 0 15px 32px rgba(7, 37, 255, 0.24);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(35, 35, 36, 0.08);
+        background: rgba(255, 255, 255, 0.76);
+        border-radius: var(--r-xl);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        grid-column: span 7;
+        min-height: 368px;
+        padding: 30px;
+        background:
+          radial-gradient(circle at 80% 24%, rgba(178, 251, 176, 0.72), transparent 12rem),
+          linear-gradient(135deg, #ffffff, #f6f4ff);
+      }
+
+      .hero::after {
+        position: absolute;
+        right: -42px;
+        bottom: -56px;
+        width: 260px;
+        height: 260px;
+        content: "";
+        background:
+          linear-gradient(135deg, rgba(7, 37, 255, 0.92), rgba(161, 157, 254, 0.92));
+        border-radius: 78px;
+        transform: rotate(16deg);
+        opacity: 0.92;
+      }
+
+      .hero::before {
+        position: absolute;
+        right: 78px;
+        bottom: 62px;
+        z-index: 1;
+        width: 96px;
+        height: 96px;
+        content: "";
+        background: var(--yellow);
+        border-radius: 28px;
+        transform: rotate(-12deg);
+        box-shadow: 0 26px 50px rgba(35, 35, 36, 0.18);
+      }
+
+      .eyebrow {
+        position: relative;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 18px;
+        padding: 8px 11px;
+        background: var(--blue-soft);
+        border-radius: 999px;
+        color: var(--blue);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .hero h2 {
+        position: relative;
+        z-index: 2;
+        max-width: 660px;
+        margin: 0;
+        font-family: "Space Grotesk", "Manrope", sans-serif;
+        font-size: clamp(42px, 5vw, 72px);
+        line-height: 0.94;
+        letter-spacing: -0.065em;
+      }
+
+      .hero p {
+        position: relative;
+        z-index: 2;
+        max-width: 620px;
+        margin: 18px 0 26px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.72;
+      }
+
+      .hero-action {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .agent {
+        grid-column: span 5;
+        min-height: 368px;
+        padding: 24px;
+        background:
+          linear-gradient(145deg, #26232f, #111116);
+        color: white;
+      }
+
+      .agent-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .agent-id {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .agent-avatar {
+        display: grid;
+        width: 46px;
+        height: 46px;
+        place-items: center;
+        background: linear-gradient(135deg, var(--mint), var(--purple));
+        border-radius: 17px;
+        color: #111116;
+      }
+
+      .agent h3 {
+        margin: 0;
+        font-size: 17px;
+      }
+
+      .agent-top p {
+        margin: 4px 0 0;
+        color: rgba(255, 255, 255, 0.62);
+        font-size: 12px;
+      }
+
+      .agent-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 10px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        color: rgba(255, 255, 255, 0.76);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .pulse {
+        width: 7px;
+        height: 7px;
+        background: var(--mint);
+        border-radius: 999px;
+        box-shadow: 0 0 0 5px rgba(178, 251, 176, 0.12);
+      }
+
+      .agent-message {
+        margin-top: 28px;
+        padding: 18px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.11);
+        border-radius: 24px;
+      }
+
+      .agent-message h4 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+      }
+
+      .agent-message p {
+        margin: 12px 0 0;
+        color: rgba(255, 255, 255, 0.68);
+        line-height: 1.65;
+      }
+
+      .agent-steps {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: rgba(255, 255, 255, 0.62);
+        font-size: 13px;
+      }
+
+      .step-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .step.done .step-dot {
+        background: var(--mint);
+      }
+
+      .step.running {
+        color: white;
+      }
+
+      .step.running .step-dot {
+        background: var(--yellow);
+        animation: pulse-dot 1.2s var(--ease) infinite;
+      }
+
+      .inbox {
+        grid-column: span 4;
+        min-height: 470px;
+        padding: 18px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .section-head h3 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: -0.02em;
+      }
+
+      .section-head p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-bottom: 14px;
+      }
+
+      .filter {
+        padding: 7px 10px;
+        border: 0;
+        background: #f1eef8;
+        border-radius: 999px;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .filter.active {
+        background: var(--ink);
+        color: white;
+      }
+
+      .risk-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .risk-item {
+        width: 100%;
+        padding: 14px;
+        border: 0;
+        background: #f8f7fc;
+        border-radius: 22px;
+        cursor: pointer;
+        text-align: left;
+        transition:
+          transform 160ms var(--ease),
+          background 160ms var(--ease),
+          box-shadow 160ms var(--ease);
+      }
+
+      .risk-item:hover,
+      .risk-item.active {
+        background: white;
+        box-shadow: var(--shadow-sm);
+        transform: translateY(-1px);
+      }
+
+      .risk-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .risk-item h4 {
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .risk-item p {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .risk-pill {
+        flex: 0 0 auto;
+        padding: 6px 9px;
+        background: color-mix(in srgb, var(--risk) 14%, white);
+        border-radius: 999px;
+        color: var(--risk);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 12px;
+      }
+
+      .tags span {
+        padding: 5px 7px;
+        background: white;
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .detail {
+        grid-column: span 8;
+        min-height: 470px;
+        padding: 20px;
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 220px;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .detail h3 {
+        margin: 0;
+        font-family: "Space Grotesk", "Manrope", sans-serif;
+        font-size: 34px;
+        line-height: 1;
+        letter-spacing: -0.05em;
+      }
+
+      .detail-summary {
+        max-width: 740px;
+        margin: 10px 0 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .score-card {
+        padding: 18px;
+        background: color-mix(in srgb, var(--risk) 12%, #ffffff);
+        border-radius: 28px;
+        text-align: center;
+      }
+
+      .score-card strong {
+        display: block;
+        color: var(--risk);
+        font-family: "Space Grotesk", "Manrope", sans-serif;
+        font-size: 54px;
+        line-height: 0.9;
+      }
+
+      .score-card span {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 8px;
+        width: fit-content;
+        margin: 22px 0 16px;
+        padding: 6px;
+        background: #f1eef8;
+        border-radius: 999px;
+      }
+
+      .tab {
+        padding: 9px 14px;
+        border: 0;
+        background: transparent;
+        border-radius: 999px;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .tab.active {
+        background: var(--card);
+        color: var(--ink);
+        box-shadow: 0 1px 0 rgba(35, 35, 36, 0.07);
+      }
+
+      .tab-panel {
+        display: none;
+      }
+
+      .tab-panel.active {
+        display: block;
+      }
+
+      .reason-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .reason {
+        min-height: 150px;
+        padding: 16px;
+        background: #f8f7fc;
+        border-radius: 24px;
+      }
+
+      .reason span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .reason strong {
+        display: block;
+        margin: 14px 0 8px;
+        font-family: "Space Grotesk", "Manrope", sans-serif;
+        font-size: 42px;
+        line-height: 0.9;
+        letter-spacing: -0.05em;
+      }
+
+      .reason p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .evidence-list,
+      .timeline-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .evidence,
+      .timeline-card {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 12px;
+        width: 100%;
+        padding: 14px;
+        border: 0;
+        background: #f8f7fc;
+        border-radius: 22px;
+        text-align: left;
+      }
+
+      .evidence {
+        cursor: pointer;
+      }
+
+      .evidence.active,
+      .evidence:hover {
+        background: var(--blue-soft);
+      }
+
+      .code {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        background: white;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .evidence strong,
+      .timeline-card strong {
+        display: block;
+        font-size: 14px;
+      }
+
+      .evidence p,
+      .timeline-card p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .timeline-card time {
+        display: block;
+        color: var(--soft);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .draft-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 260px;
+        gap: 12px;
+      }
+
+      .draft,
+      .plan {
+        padding: 16px;
+        background: #f8f7fc;
+        border-radius: 24px;
+      }
+
+      .draft h4,
+      .plan h4 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .draft p,
+      .plan p {
+        margin: 10px 0 16px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .toast {
+        position: fixed;
+        right: 22px;
+        bottom: 22px;
+        z-index: 40;
+        width: min(360px, calc(100vw - 32px));
+        padding: 14px;
+        background: var(--ink);
+        border-radius: 18px;
+        color: white;
+        box-shadow: var(--shadow);
+        opacity: 0;
+        transform: translateY(14px);
+        pointer-events: none;
+        transition:
+          opacity 220ms var(--ease),
+          transform 220ms var(--ease);
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .toast strong {
+        display: block;
+        font-size: 13px;
+      }
+
+      .toast span {
+        display: block;
+        margin-top: 4px;
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 12px;
+      }
+
+      @keyframes pulse-dot {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(252, 229, 117, 0.26);
+        }
+        50% {
+          box-shadow: 0 0 0 7px rgba(252, 229, 117, 0);
+        }
+      }
+
+      @media (max-width: 1080px) {
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .grid,
+        .detail-grid,
+        .draft-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .hero,
+        .agent,
+        .inbox,
+        .detail {
+          grid-column: span 1;
+        }
+
+        .reason-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .page {
+          width: min(100vw - 20px, 1360px);
+          padding-top: 12px;
+        }
+
+        .nav {
+          display: none;
+        }
+
+        .hero h2 {
+          font-size: 42px;
+        }
+
+        .focus-action {
+          display: block;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position:absolute">
+      <symbol id="spark" viewBox="0 0 24 24">
+        <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+      </symbol>
+      <symbol id="refresh" viewBox="0 0 24 24">
+        <path d="M20 12a8 8 0 0 1-14.5 4.7M4 12A8 8 0 0 1 18.5 7.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        <path d="M18 4v4h-4M6 20v-4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      </symbol>
+      <symbol id="check" viewBox="0 0 24 24">
+        <path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </symbol>
+    </svg>
+
+    <main class="page">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark"><svg width="22" height="22"><use href="#spark" /></svg></div>
+          <div>
+            <h1>Dev Time</h1>
+            <p>GitHub 项目风险智能体</p>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Dashboard">
+          <button class="active" type="button">今日</button>
+          <button type="button">项目</button>
+          <button type="button">智能体</button>
+          <button type="button">设置</button>
+        </nav>
+
+        <div class="actions">
+          <button class="btn" id="syncButton" type="button"><svg width="16" height="16"><use href="#refresh" /></svg>同步</button>
+          <button class="btn primary" id="agentButton" type="button"><svg width="16" height="16"><use href="#spark" /></svg>运行 Agent</button>
+        </div>
+      </header>
+
+      <section class="grid">
+        <article class="card hero">
+          <p class="eyebrow">今日最高风险</p>
+          <h2 id="heroTitle">先修复 CI，再请求 Review。</h2>
+          <p id="heroText">dev-time-server 正在偏离计划：PR #18 已等待 review，CI run #421 仍在失败。</p>
+          <div class="hero-action">
+            <button class="btn primary" id="detailButton" type="button">打开风险收件箱</button>
+            <button class="btn" type="button">查看 GitHub 证据</button>
+          </div>
+        </article>
+
+        <aside class="card agent">
+          <div class="agent-top">
+            <div class="agent-id">
+              <div class="agent-avatar"><svg width="22" height="22"><use href="#spark" /></svg></div>
+              <div>
+                <h3>风险 Copilot</h3>
+                <p id="agent范围">正在关注 dev-time-server</p>
+              </div>
+            </div>
+            <span class="agent-status"><span class="pulse"></span>实时</span>
+          </div>
+          <div class="agent-message">
+            <h4 id="agentHeadline">最短路径是先解除 CI 阻塞。</h4>
+            <p id="agentText">CI 变绿后，PR #18 今天就能进入 review；无需改变范围，也能解除 milestone 阻塞。</p>
+          </div>
+          <div class="agent-steps" id="agentSteps"></div>
+        </aside>
+
+        <section class="card inbox" id="inbox">
+          <div class="section-head">
+            <div>
+              <h3>风险收件箱</h3>
+              <p>只放需要判断或行动的项目。</p>
+            </div>
+          </div>
+          <div class="filter-row">
+            <button class="filter active" data-filter="all" type="button">全部</button>
+            <button class="filter" data-filter="阻塞" type="button">阻塞</button>
+            <button class="filter" data-filter="进度" type="button">进度</button>
+            <button class="filter" data-filter="质量" type="button">质量</button>
+            <button class="filter" data-filter="范围" type="button">范围</button>
+          </div>
+          <div class="risk-list" id="riskList"></div>
+        </section>
+
+        <section class="card detail">
+          <div class="detail-grid">
+            <div>
+              <p class="eyebrow">当前项目</p>
+              <h3 id="projectName">dev-time-server</h3>
+              <p class="detail-summary" id="projectSummary">PR review 被失败的 CI 阻塞，milestone 只剩 2 天。</p>
+            </div>
+            <div class="score-card" id="scoreCard">
+              <strong id="projectScore">72</strong>
+              <span id="projectLevel">高风险</span>
+            </div>
+          </div>
+
+          <div class="tabs">
+            <button class="tab active" data-tab="why" type="button">原因</button>
+            <button class="tab" data-tab="evidence" type="button">证据</button>
+            <button class="tab" data-tab="action" type="button">行动</button>
+          </div>
+
+          <div class="tab-panel active" id="tab-why">
+            <div class="reason-grid" id="reasonGrid"></div>
+          </div>
+
+          <div class="tab-panel" id="tab-evidence">
+            <div class="evidence-list" id="evidenceList"></div>
+            <div class="timeline-list" id="timelineList" style="margin-top:12px"></div>
+          </div>
+
+          <div class="tab-panel" id="tab-action">
+            <div class="draft-layout">
+              <div class="plan">
+                <h4>Agent 计划</h4>
+                <p id="planText">修复失败的 scorer 测试，重新运行 CI，然后请 reviewer 回到 PR #18。</p>
+              </div>
+              <div class="draft">
+                <h4 id="draftTitle">行动草稿</h4>
+                <p id="draftText">在 PR #18 评论：当前 CI 正在阻塞 review。我会先修复 pipeline，变绿后重新请求 review。</p>
+                <button class="btn primary" id="confirmButton" type="button"><svg width="15" height="15"><use href="#check" /></svg>确认</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite">
+      <strong id="toastTitle">已更新</strong>
+      <span id="toastText">工作台状态已更新。</span>
+    </div>
+
+    <script>
+      const projects = [
+        {
+          id: "server",
+          name: "dev-time-server",
+          score: 72,
+          level: "高风险",
+          color: "#c76a67",
+          categories: ["阻塞", "进度", "质量"],
+          summary: "PR review 被失败的 CI 阻塞，milestone 只剩 2 天。",
+          tags: ["CI 失败", "PR 等待中", "剩余 2 天"],
+          reasons: [["阻塞", "82", "CI 阻塞 PR review"], ["进度", "76", "milestone 即将截止"], ["质量", "58", "risk scorer 失败"]],
+          evidence: [["PR", "PR #18 已等待 3 天", "feature/risk-engine 仍未合并。"], ["CI", "CI run #421 失败", "risk scoring pipeline 测试失败。"], ["MS", "Milestone v0.1 has 剩余 2 天", "仍有 5 个 issue 未关闭。"]],
+          timeline: [["6月8日", "PR #18 创建", "包含风险规则和 Agent 输出结构变更。"], ["6月9日", "CI 失败", "risk scorer 测试失败。"], ["6月10日", "review 停滞", "reviewer 尚未返回。"]],
+          agentHeadline: "最短路径是先解除 CI 阻塞。",
+          agentText: "CI 变绿后，PR #18 今天就能进入 review；无需改变范围，也能解除 milestone 阻塞。",
+          plan: "修复失败的 scorer 测试，重新运行 CI，然后请 reviewer 回到 PR #18。",
+          draft: "在 PR #18 评论：当前 CI 正在阻塞 review。我会先修复 pipeline，变绿后重新请求 review。"
+        },
+        {
+          id: "client",
+          name: "dev-time",
+          score: 54,
+          level: "关注",
+          color: "#bd741c",
+          categories: ["范围", "进度"],
+          summary: "demo 方向持续变化，MVP 主流程需要冻结。",
+          tags: ["范围 drift", "UI 反复修改", "需要冻结"],
+          reasons: [["范围", "61", "流程仍在变化"], ["进度", "44", "demo 持续返工"], ["Decision", "38", "视觉标准不清晰"]],
+          evidence: [["DOC", "视觉方向变更", "经历了控制台、工作台和 bento 多个版本。"], ["UX", "入口流程不清晰", "用户不知道从哪里开始。"], ["MS", "MVP 边界未冻结", "首页结构必须确定。"]],
+          timeline: [["6月10日", "确认 Web 服务优先", "桌面端移出 MVP。"], ["Jun 11", "视觉方向变更", "加入插图和动效约束。"], ["Jun 11", "重置 demo", "聚焦到风险收件箱。"]],
+          agentHeadline: "先冻结首屏，再增加功能。",
+          agentText: "产品需要一个明确入口：最高风险、风险收件箱和单一行动草稿。",
+          plan: "将 MVP 首页冻结为：最高风险、风险收件箱、当前风险和 Agent 行动。",
+          draft: "创建 issue：在实现组件前冻结 MVP 首页结构。"
+        },
+        {
+          id: "agent",
+          name: "risk-agent-core",
+          score: 38,
+          level: "关注",
+          color: "#0725ff",
+          categories: ["质量"],
+          summary: "Agent 输出结构清晰，但实现前需要回放样例。",
+          tags: ["缺少 eval", "输出稳定", "需要样例"],
+          reasons: [["质量", "46", "缺少回归样例"], ["Agent", "32", "输出需要快照"], ["进度", "30", "不阻塞 MVP"]],
+          evidence: [["AGT", "Risk Scout 已定义", "输出风险等级、原因、影响和行动。"], ["EVL", "缺少 eval fixture", "没有固定 GitHub 事件集。"], ["DOC", "AgentRun 字段已定义", "token 和成本记录需要确认。"]],
+          timeline: [["6月9日", "Agent 场景已定义", "Risk Scout 和 Daily Brief 进入 v1。"], ["6月10日", "规则优先", "LLM 不直接决定风险分。"], ["Jun 11", "等待样例", "需要回放数据。"]],
+          agentHeadline: "改 prompt 前先补回放样例。",
+          agentText: "这样 prompt 和规则变化时，Risk Scout 仍可评估。",
+          plan: "创建 3 组 GitHub 事件样例，并保存期望 Agent 输出。",
+          draft: "创建 issue：补充 Risk Scout 样例和输出快照。"
+        }
+      ];
+
+      const state = { selected: "server", filter: "all", tab: "why", confirmed: false };
+      const $ = (selector) => document.querySelector(selector);
+
+      function current() {
+        return projects.find((project) => project.id === state.selected) || projects[0];
+      }
+
+      function filtered() {
+        return state.filter === "all" ? projects : projects.filter((project) => project.categories.includes(state.filter));
+      }
+
+      function renderList() {
+        $("#riskList").innerHTML = filtered().map((project) => `
+          <button class="risk-item ${project.id === state.selected ? "active" : ""}" style="--risk:${project.color}" data-id="${project.id}" type="button">
+            <div class="risk-top">
+              <div>
+                <h4>${project.name}</h4>
+                <p>${project.summary}</p>
+              </div>
+              <span class="risk-pill">${project.level}</span>
+            </div>
+            <div class="tags">${project.tags.map((tag) => `<span>${tag}</span>`).join("")}</div>
+          </button>
+        `).join("");
+        document.querySelector全部(".risk-item").forEach((button) => {
+          button.addEventListener("click", () => {
+            state.selected = button.dataset.id;
+            state.confirmed = false;
+            render();
+            showToast("已选择", current().name);
+          });
+        });
+      }
+
+      function renderDetail() {
+        const project = current();
+        $("#projectName").textContent = project.name;
+        $("#projectSummary").textContent = project.summary;
+        $("#projectScore").textContent = project.score;
+        $("#projectLevel").textContent = project.level;
+        $("#scoreCard").style.setProperty("--risk", project.color);
+        $("#agent范围").textContent = `关注ing ${project.name}`;
+        $("#agentHeadline").textContent = project.agentHeadline;
+        $("#agentText").textContent = project.agentText;
+        $("#planText").textContent = project.plan;
+        $("#draftTitle").textContent = state.confirmed ? "确认ed" : "行动草稿";
+        $("#draftText").textContent = state.confirmed ? "行动已进入待确认队列。MVP 不会自动写入 GitHub。" : project.draft;
+        $("#confirmButton").innerHTML = state.confirmed ? '<svg width="15" height="15"><use href="#check"></use></svg>确认ed' : '<svg width="15" height="15"><use href="#check"></use></svg>确认';
+        $("#confirmButton").disabled = state.confirmed;
+        $("#reasonGrid").innerHTML = project.reasons.map(([name, score, desc]) => `
+          <div class="reason"><span>${name}</span><strong>${score}</strong><p>${desc}</p></div>
+        `).join("");
+        $("#evidenceList").innerHTML = project.evidence.map(([type, title, desc], index) => `
+          <button class="evidence ${index === 0 ? "active" : ""}" data-index="${index}" type="button">
+            <span class="code">${type}</span>
+            <span><strong>${title}</strong><p>${desc}</p></span>
+          </button>
+        `).join("");
+        $("#timelineList").innerHTML = project.timeline.map(([date, title, desc]) => `
+          <div class="timeline-card"><span class="code">${date.split(" ")[1]}</span><span><time>${date}</time><strong>${title}</strong><p>${desc}</p></span></div>
+        `).join("");
+        document.querySelector全部(".evidence").forEach((button) => {
+          button.addEventListener("click", () => {
+            document.querySelector全部(".evidence").forEach((item) => item.classList.remove("active"));
+            button.classList.add("active");
+            showToast("证据 focused", project.evidence[Number(button.dataset.index)][1]);
+          });
+        });
+        renderSteps("idle");
+      }
+
+      function renderHero() {
+        const top = projects.slice().sort((a, b) => b.score - a.score)[0];
+        $("#heroTitle").textContent = top.agentHeadline;
+        $("#heroText").textContent = top.summary;
+      }
+
+      function renderTabs() {
+        document.querySelector全部(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === state.tab));
+        document.querySelector全部(".tab-panel").forEach((panel) => panel.classList.remove("active"));
+        $(`#tab-${state.tab}`).classList.add("active");
+      }
+
+      function renderSteps(mode) {
+        const classes = mode === "read" ? ["running", "", ""] : mode === "reason" ? ["done", "running", ""] : mode === "done" ? ["done", "done", "done"] : ["done", "done", "running"];
+        $("#agentSteps").innerHTML = `
+          <div class="step ${classes[0]}"><span class="step-dot"></span>读取 GitHub 证据</div>
+          <div class="step ${classes[1]}"><span class="step-dot"></span>解释风险原因</div>
+          <div class="step ${classes[2]}"><span class="step-dot"></span>准备行动草稿</div>
+        `;
+      }
+
+      function render() {
+        renderHero();
+        renderList();
+        renderDetail();
+        renderTabs();
+      }
+
+      function runAgent() {
+        state.tab = "action";
+        renderTabs();
+        renderSteps("read");
+        showToast("Agent 运行中", "正在读取 GitHub 证据。");
+        setTimeout(() => renderSteps("reason"), 520);
+        setTimeout(() => {
+          renderSteps("done");
+          showToast("Agent 已完成", "行动 draft is ready.");
+        }, 1120);
+      }
+
+      function showToast(title, text) {
+        $("#toastTitle").textContent = title;
+        $("#toastText").textContent = text;
+        $("#toast").classList.add("show");
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => $("#toast").classList.remove("show"), 2400);
+      }
+
+      document.querySelector全部(".filter").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.filter = button.dataset.filter;
+          document.querySelector全部(".filter").forEach((filter) => filter.classList.remove("active"));
+          button.classList.add("active");
+          const list = filtered();
+          if (!list.some((project) => project.id === state.selected) && list[0]) state.selected = list[0].id;
+          state.confirmed = false;
+          render();
+        });
+      });
+
+      document.querySelector全部(".tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          state.tab = tab.dataset.tab;
+          renderTabs();
+        });
+      });
+
+      $("#syncButton").addEventListener("click", () => {
+        showToast("同步ing GitHub", "正在读取 PR、issue、CI 和 milestone。");
+        setTimeout(() => showToast("同步 complete", "风险收件箱 refreshed."), 1000);
+      });
+      $("#agentButton").addEventListener("click", runAgent);
+      $("#detailButton").addEventListener("click", () => {
+        $("#inbox").scrollIntoView({ behavior: "smooth", block: "start" });
+        showToast("已打开风险收件箱", "选择一个项目查看详情。");
+      });
+      $("#confirmButton").addEventListener("click", () => {
+        state.confirmed = true;
+        state.tab = "action";
+        renderDetail();
+        renderTabs();
+        renderSteps("done");
+        showToast("确认ed", "MVP 不会自动写入 GitHub。");
+      });
+
+      render();
+    </script>
+  </body>
+</html>
