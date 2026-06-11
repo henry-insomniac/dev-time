@@ -42,6 +42,15 @@
   margin-top: 18px;
 }
 
+.api-error {
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #ffe2e2;
+  padding: 10px;
+  margin: 0;
+  font-weight: 700;
+}
+
 .queue-item {
   min-height: 64px;
   display: flex;

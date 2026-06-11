@@ -35,22 +35,20 @@ describe('Dev Time risk workspace', () => {
   })
 
   it('从服务端加载项目风险队列', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          projects: [
-            {
-              id: 'project_server',
-              name: 'dev-time-server',
-              risk_score: 82,
-              risk_level: 'high',
-            },
-          ],
-        }),
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        projects: [
+          {
+            id: 'project_server',
+            name: 'dev-time-server',
+            risk_score: 82,
+            risk_level: 'high',
+          },
+        ],
       }),
-    )
+    })
+    vi.stubGlobal('fetch', fetchMock)
 
     render(<App />)
 
@@ -61,6 +59,7 @@ describe('Dev Time risk workspace', () => {
     })
     expect(screen.getByText(/风险分 82/i)).toBeInTheDocument()
     expect(screen.getByText(/当前项目：dev-time-server/i)).toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith('http://localhost:8080/api/projects')
   })
 
   it('展示并确认当前项目行动建议', async () => {

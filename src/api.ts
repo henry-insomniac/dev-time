@@ -23,7 +23,7 @@ export type ActionSuggestionsResponse = {
   action_suggestions: ActionSuggestion[]
 }
 
-const apiBaseURL = import.meta.env.VITE_API_BASE_URL ?? ''
+const apiBaseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 export async function fetchProjects(): Promise<ProjectSummary[]> {
   const response = await fetch(`${apiBaseURL}/api/projects`)

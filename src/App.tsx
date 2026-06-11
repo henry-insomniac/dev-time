@@ -42,6 +42,7 @@ export function App() {
   const [riskProjects, setRiskProjects] = useState(projects)
   const [selectedProjectID, setSelectedProjectID] = useState(projects[0].id)
   const [actionSuggestions, setActionSuggestions] = useState<ActionSuggestion[]>([])
+  const [apiError, setAPIError] = useState('')
 
   useEffect(() => {
     let ignore = false
@@ -55,9 +56,14 @@ export function App() {
         setRiskProjects(mappedProjects)
         setSelectedProjectID(mappedProjects[0].id)
         setActionSuggestions([])
+        setAPIError('')
       })
-      .catch(() => {
-        // Keep the local demo queue available when the API is not running.
+      .catch((error: unknown) => {
+        setAPIError(
+          error instanceof Error
+            ? `后端连接失败：${error.message}`
+            : '后端连接失败',
+        )
       })
 
     return () => {
@@ -100,6 +106,7 @@ export function App() {
           <h1 id="workspace-title">风险队列</h1>
         </div>
         <div className="queue-list">
+          {apiError ? <p className="api-error">{apiError}</p> : null}
           {riskProjects.map((project) => (
             <button
               aria-label={`${project.name} ${formatRiskLevel(project.level)}`}
