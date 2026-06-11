@@ -65,21 +65,27 @@
 
 落地方式：
 
-- demo 使用浅紫灰背景、深色 Copilot 卡片、紫色和薄荷色点缀。
-- Copilot 不再固定为三栏右侧大面板，而是作为 bento 卡片和 action tab 出现。
-- 页面核心仍是 risk inbox 和 selected risk。
+- demo 最终转向暖纸面背景、强黑描边、酸性绿色 Agent dock、品牌蓝主行动和珊瑚风险色。
+- Agent 不作为卡片附属模块，而是右侧常驻工作区；用户始终可以在当前风险上下文里追问和确认行动。
+- 页面核心是三栏工作台：左侧风险队列，中间风险详情，右侧 Agent 对话和运行状态。
 
 ## 当前 demo 设计决策
 
-- 布局：bento dashboard，首屏是 `Top risk today` + `Risk Copilot`。
-- 信息架构：`Top risk -> Risk inbox -> Selected project -> Why / Evidence / Action`。
-- 配色：浅紫灰底、品牌蓝主行动、珊瑚风险色、薄荷绿和黄色点缀。
-- 字体：`Space Grotesk` 用于大标题和数字，`Manrope` 用于 UI 文案。
-- 交互：筛选风险、切换项目、切换详情 tabs、运行 Agent、确认草稿。
-- 约束：Agent 只生成草稿，MVP 不自动写入 GitHub。
+当前 `demo/index.html` 是 Dev Time 正式产品 UI 和核心交互的定稿基线。后续 React / 产品化实现必须沿用该 demo 的左中右三栏工作台、右侧常驻 Agent dock、EvidenceBundle / AgentArtifact / ActionSuggestion 闭环和视觉语言；除非产品决策明确变更，否则不得退回普通卡片看板、顶部 tab 管理后台或独立聊天页。
+
+- 布局：左侧窄导航 + 左中右三栏主工作台。左栏是 `风险队列`，中栏是 `今日风险指挥台` 和 `风险详情`，右栏是常驻 `Agent Runtime / Agent 对话`。
+- 信息架构：`风险队列 -> 当前风险详情 -> EvidenceBundle / AgentArtifact / ActionSuggestion -> Agent 对话确认`。
+- 配色：暖纸面背景、强黑描边、品牌蓝主行动、酸性绿色表达 Agent Runtime、珊瑚色表达风险、黄色表达提醒和待确认。
+- 字体：`Noto Sans SC` 强化中文标题层级，`IBM Plex Sans` 服务 UI 数字和技术标签。
+- 插图：首屏使用自绘三服务流程图，表达 `GitHub -> dev-time-server -> dev-time-agent -> 用户确认` 的产品边界。
+- 动效：流程 beam、扫描器和 pipeline 状态用于表达 Agent 正在读取证据、构建 EvidenceBundle、运行 workflow、生成草稿。
+- Agent 交互：Agent 不是单一运行按钮，也不是无上下文聊天框；它是当前风险上下文里的对话侧栏。用户可以问风险原因、证据可靠性、下一步行动，Agent 回答必须基于当前 EvidenceBundle、AgentArtifact 和 ActionSuggestion。
+- Agent dock：桌面端右侧 Agent 区域固定在视口内，顶部运行状态固定，中间消息列表内部滚动，底部输入框永远置底，不跟随中间项目内容滚动。
+- 交互：筛选风险、切换项目、切换详情 tabs、运行 AgentJob、和 Agent 对话、聚焦证据、确认 ActionSuggestion 草稿。
+- 约束：Agent 只生成草稿；用户确认后由 `dev-time-server` 校验权限并执行 GitHub 写入，MVP 不自动写入 GitHub。
 
 ## 后续改进方向
 
-- 若进入正式 React 实现，应把 demo 拆为 `TopRiskCard`、`RiskInbox`、`SelectedRiskDetail`、`RiskCopilot`、`EvidenceList`、`ActionDraft`。
+- 若进入正式 React 实现，应把 demo 拆为 `RiskCommandHero`、`AgentRuntimePanel`、`AgentConversationPanel`、`RiskQueue`、`SelectedRiskDetail`、`EvidenceBundlePanel`、`AgentArtifactPanel`、`ActionSuggestionDraft`。
 - 需要确认中文字体加载策略，避免外部字体无法访问时中文标题层级变弱。
-- 可增加真实 GitHub 图标和语义风险图标，但不要堆装饰性图标。
+- 可引入真实 GitHub 图标和 lucide 图标库，但图标必须服务于状态、工具或操作，不堆装饰性图标。

@@ -22,11 +22,11 @@
 
 - 风险驾驶舱。
 - 项目风险详情。
-- Agent Insight 面板。
+- 右侧常驻 Agent dock：AgentJob 状态、上下文对话、证据解释和行动草稿确认。
 - GitHub 连接和 repository 导入流程的用户界面。
 - LLM Provider 配置界面。
 - ActionSuggestion 的用户确认交互。
-- Futuristic Risk Console 视觉系统落地。
+- 定稿三栏工作台和 Intelligent Risk Studio 视觉系统落地。
 
 前端不得保存 GitHub token 或 LLM API Key 明文；涉及密钥、GitHub 写入和 Agent 执行的能力必须通过 `dev-time-server` 提供的后端 API 完成。
 
@@ -45,7 +45,8 @@
     ├── skill-authoring.md
     ├── bug-fix-log.md
     ├── git-collaboration.md
-    └── tech-stack.md
+    ├── tech-stack.md
+    └── coding-standards.md
 ```
 
 ## 目录职责
@@ -65,6 +66,14 @@ Dev Time 产品级 PRD。定义产品定位、MVP 范围、风险模型、Agent 
 ### `.claude/technical-architecture.md`
 
 Dev Time 跨端技术架构。定义 GitHub 事实源、事件流、风险引擎、Agent Runtime、LLM Gateway、通知层和 API 边界。
+
+### `.claude/tech-stack.md`
+
+前端技术栈、工具链、脚本、依赖、安全和验证规范。当前定稿为 Vite + React + TypeScript。
+
+### `.claude/coding-standards.md`
+
+前端编码规范、React/TypeScript 文件职责、行数约束和评审检查项。
 
 ### `.agents/skills/`
 

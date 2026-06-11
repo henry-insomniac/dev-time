@@ -13,6 +13,7 @@
 - `bug-fix-log.md`：bug 修复记录、复盘模板和已知问题。
 - `git-collaboration.md`：分支命名、提交信息、PR、评审和发布约定。
 - `tech-stack.md`：当前技术栈、推荐工具链、脚本和文档规范。
+- `coding-standards.md`：前端编码规范、文件职责、行数约束和评审检查项。
 
 ## 维护规则
 
@@ -22,6 +23,7 @@
 - 修复 bug 后，同步更新 `bug-fix-log.md`。
 - 调整协作流程时，同步更新 `git-collaboration.md`。
 - 引入新语言、运行时、包管理器、测试框架或格式化工具时，同步更新 `tech-stack.md`。
+- 调整代码组织、文件职责、函数职责或行数上限时，同步更新 `coding-standards.md`。
 - 调整 `demo/index.html` 的视觉方向或交互结构时，同步更新 `demo-design-references.md`。
 
 ## 当前状态
