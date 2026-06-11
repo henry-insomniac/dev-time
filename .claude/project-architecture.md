@@ -32,11 +32,31 @@
 
 ## 当前目录结构
 
-请在项目初始化后补充真实目录结构。
-
 ```text
 .
+├── .env.example
+├── .gitignore
 ├── AGENTS.md
+├── demo/
+│   └── index.html
+├── src/
+│   ├── App.test.tsx
+│   ├── App.tsx
+│   ├── App.css
+│   ├── api.ts
+│   ├── main.tsx
+│   ├── test/
+│   │   └── setup.ts
+│   └── vite-env.d.ts
+├── index.html
+├── package.json
+├── pnpm-lock.yaml
+├── eslint.config.js
+├── vite.config.ts
+├── vitest.config.ts
+├── tsconfig.json
+├── tsconfig.app.json
+├── tsconfig.node.json
 └── .claude/
     ├── README.md
     ├── product-prd.md
@@ -75,6 +95,14 @@ Dev Time 跨端技术架构。定义 GitHub 事实源、事件流、风险引擎
 
 前端编码规范、React/TypeScript 文件职责、行数约束和评审检查项。
 
+### `src/`
+
+React 前端源码目录。当前包含三栏 Risk Workspace shell、`/api/projects` 前端 client、交互测试和基础样式。Risk queue 优先加载 server 项目风险队列，API 不可用时保留本地 demo fallback；后续按 `features/` 和 `shared/` 扩展。
+
+### `demo/`
+
+产品视觉和交互定稿 demo。正式 React 实现必须沿用当前三栏工作台和 Agent Dock 基线。
+
 ### `.agents/skills/`
 
 可选的项目级 Agent Skills 目录。只有在项目明确需要可复用 Agent 工作流时才创建。新增 skill 时，应同步说明触发条件、输入输出、验证方式和安全边界。
@@ -96,3 +124,6 @@ Dev Time 跨端技术架构。定义 GitHub 事实源、事件流、风险引擎
 | --- | --- | --- | --- |
 | 2026-06-10 | 初始化 Agent 项目文档 | 建立项目长期上下文和协作基线 | 已创建 `AGENTS.md` 与 `.claude` 文档 |
 | 2026-06-10 | 补充 Dev Time 产品 PRD 和技术架构基线 | 明确 GitHub 风险驾驶舱、风险模型和 Agent 落地场景 | 已新增 `product-prd.md` 与 `technical-architecture.md` |
+| 2026-06-11 | 初始化 Vite React 工程骨架 | 建立 M0 可验证前端基础 | `pnpm lint && pnpm test && pnpm build` |
+| 2026-06-11 | 增加三栏 Risk Workspace shell | 建立 M13 左风险队列、中详情、右 Agent Dock 的前端交互切片 | `pnpm lint && pnpm test && pnpm build` |
+| 2026-06-11 | 接入项目风险队列 API | Risk Workspace 可从 `GET /api/projects` 加载项目并保留 demo fallback | `pnpm lint && pnpm test && pnpm build` |

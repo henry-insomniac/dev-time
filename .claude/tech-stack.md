@@ -89,7 +89,7 @@ src/
 
 ## 脚本规范
 
-项目初始化后建议提供：
+当前已提供：
 
 ```bash
 pnpm install
@@ -121,12 +121,10 @@ pnpm test:e2e
 
 ## 验证规范
 
-当前仓库尚未初始化前端工程。初始化后最小验证命令为：
+当前 M0 最小验证命令为：
 
 ```bash
-pnpm lint
-pnpm test
-pnpm build
+pnpm lint && pnpm test && pnpm build
 ```
 
 涉及布局、Agent Dock、ActionSuggestion 确认和响应式行为时，必须补充：
