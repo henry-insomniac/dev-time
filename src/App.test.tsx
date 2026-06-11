@@ -290,9 +290,12 @@ describe('Dev Time risk workspace', () => {
     fireEvent.click(screen.getByRole('button', { name: /发送/i }))
 
     expect(
-      await screen.findByText(/Agent：因为 go test 持续失败并阻塞交付。/i),
+      await screen.findByText(/因为 go test 持续失败并阻塞交付。/i),
     ).toBeInTheDocument()
-    expect(screen.getByText(/证据：event_check-run-123/i)).toBeInTheDocument()
+    expect(
+      within(screen.getByLabelText(/Agent 对话记录/i)).getByText('Agent'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('event_check-run-123')).toBeInTheDocument()
   })
 })
 

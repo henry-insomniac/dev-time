@@ -224,15 +224,31 @@ export function App() {
           </div>
         </div>
         <div className="agent-messages">
-          <p>{selectedProject.reason}</p>
+          <section className="agent-summary" aria-label="风险摘要">
+            <strong>风险摘要</strong>
+            <p>{selectedProject.reason}</p>
+          </section>
           {agentConversationTurns.length > 0 ? (
             <div className="conversation-turns" aria-label="Agent 对话记录">
               {agentConversationTurns.map((turn) => (
                 <article className="conversation-turn" key={turn.id}>
-                  <p className="conversation-user">我：{turn.user_message}</p>
-                  <p className="conversation-agent">Agent：{turn.agent_response}</p>
+                  <div className="message-row message-row-user">
+                    <p className="message-bubble message-bubble-user">
+                      {turn.user_message}
+                    </p>
+                  </div>
+                  <div className="message-row message-row-agent">
+                    <div className="message-bubble message-bubble-agent">
+                      <strong>Agent</strong>
+                      <p>{turn.agent_response}</p>
+                    </div>
+                  </div>
                   {turn.evidence_refs.length > 0 ? (
-                    <small>证据：{turn.evidence_refs.join(', ')}</small>
+                    <div className="evidence-chips" aria-label="回复证据">
+                      {turn.evidence_refs.map((evidenceRef) => (
+                        <span key={evidenceRef}>{evidenceRef}</span>
+                      ))}
+                    </div>
                   ) : null}
                 </article>
               ))}
@@ -244,14 +260,20 @@ export function App() {
                 <strong>{formatAgentType(agentRuns[0].agent_type)}</strong>
                 <span>状态：{formatAgentRunStatus(agentRuns[0].status)}</span>
               </div>
-              {agentRuns[0].summary ? <p>{agentRuns[0].summary}</p> : null}
+              {agentRuns[0].summary ? (
+                <p className="agent-run-summary">{agentRuns[0].summary}</p>
+              ) : null}
               <div className="agent-steps" aria-label="Agent 调查过程">
                 {agentRuns[0].steps.map((step) => (
                   <div className="agent-step" key={step.id}>
                     <strong>{step.title}</strong>
                     <p>{step.body}</p>
                     {(step.evidence_refs ?? []).length > 0 ? (
-                      <small>{step.evidence_refs.join(', ')}</small>
+                      <div className="evidence-chips">
+                        {step.evidence_refs.map((evidenceRef) => (
+                          <span key={evidenceRef}>{evidenceRef}</span>
+                        ))}
+                      </div>
                     ) : null}
                   </div>
                 ))}
@@ -267,7 +289,7 @@ export function App() {
                   <span>状态：{formatActionStatus(suggestion.status)}</span>
                 </div>
                 <p>{suggestion.draft_body}</p>
-                <small>{suggestion.target_ref}</small>
+                <div className="target-chip">{suggestion.target_ref}</div>
                 {suggestion.status === 'pending_user_confirmation' ? (
                   <button
                     onClick={() => handleConfirmAction(suggestion.id)}
