@@ -97,7 +97,7 @@ Dev Time 跨端技术架构。定义 GitHub 事实源、事件流、风险引擎
 
 ### `src/`
 
-React 前端源码目录。当前包含三栏 Risk Workspace shell、`/api/projects` 前端 client、ActionSuggestion 列表/确认 client、交互测试和基础样式。Risk queue 优先加载 server 项目风险队列，Agent Dock 会读取当前项目行动草稿并支持确认，API 不可用时保留本地 demo fallback；后续按 `features/` 和 `shared/` 扩展。
+React 前端源码目录。当前包含三栏 Risk Workspace shell、`/api/projects` 前端 client、AgentRun / AgentStep 调查时间线 client、ActionSuggestion 列表/确认 client、交互测试和基础样式。Risk queue 优先加载 server 项目风险队列，Agent Dock 会读取当前项目 Agent 调查过程和行动草稿并支持确认；后续按 `features/` 和 `shared/` 扩展。
 
 ### `demo/`
 
@@ -128,3 +128,4 @@ React 前端源码目录。当前包含三栏 Risk Workspace shell、`/api/proje
 | 2026-06-11 | 增加三栏 Risk Workspace shell | 建立 M13 左风险队列、中详情、右 Agent Dock 的前端交互切片 | `pnpm lint && pnpm test && pnpm build` |
 | 2026-06-11 | 接入项目风险队列 API | Risk Workspace 可从 `GET /api/projects` 加载项目并保留 demo fallback | `pnpm lint && pnpm test && pnpm build` |
 | 2026-06-11 | 接入 ActionSuggestion 展示和确认 | Agent Dock 可展示当前项目行动草稿并调用 confirm API 更新状态 | `pnpm lint && pnpm test && pnpm build` |
+| 2026-06-11 | 接入 AgentRun 调查时间线 | Agent Dock 可展示 Agent 风险判断过程、步骤和证据引用 | `pnpm lint && pnpm test && pnpm build` |

@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from 'react'
 
 import {
   confirmActionSuggestion,
+  fetchAgentRuns,
   fetchActionSuggestions,
   fetchProjects,
+  type AgentRun,
   type ActionSuggestion,
   type ProjectSummary,
 } from './api'
@@ -42,6 +44,7 @@ export function App() {
   const [riskProjects, setRiskProjects] = useState(projects)
   const [selectedProjectID, setSelectedProjectID] = useState(projects[0].id)
   const [actionSuggestions, setActionSuggestions] = useState<ActionSuggestion[]>([])
+  const [agentRuns, setAgentRuns] = useState<AgentRun[]>([])
   const [apiError, setAPIError] = useState('')
 
   useEffect(() => {
@@ -56,6 +59,7 @@ export function App() {
         setRiskProjects(mappedProjects)
         setSelectedProjectID(mappedProjects[0].id)
         setActionSuggestions([])
+        setAgentRuns([])
         setAPIError('')
       })
       .catch((error: unknown) => {
@@ -74,15 +78,20 @@ export function App() {
   useEffect(() => {
     let ignore = false
 
-    fetchActionSuggestions(selectedProjectID)
-      .then((loadedSuggestions) => {
+    Promise.all([
+      fetchActionSuggestions(selectedProjectID),
+      fetchAgentRuns(selectedProjectID),
+    ])
+      .then(([loadedSuggestions, loadedAgentRuns]) => {
         if (!ignore) {
           setActionSuggestions(loadedSuggestions)
+          setAgentRuns(loadedAgentRuns)
         }
       })
       .catch(() => {
         if (!ignore) {
           setActionSuggestions([])
+          setAgentRuns([])
         }
       })
 
@@ -152,6 +161,26 @@ export function App() {
         </div>
         <div className="agent-messages">
           <p>{selectedProject.reason}</p>
+          {agentRuns[0] ? (
+            <article className="agent-run">
+              <div className="agent-run-header">
+                <strong>{formatAgentType(agentRuns[0].agent_type)}</strong>
+                <span>状态：{formatAgentRunStatus(agentRuns[0].status)}</span>
+              </div>
+              {agentRuns[0].summary ? <p>{agentRuns[0].summary}</p> : null}
+              <div className="agent-steps" aria-label="Agent 调查过程">
+                {agentRuns[0].steps.map((step) => (
+                  <div className="agent-step" key={step.id}>
+                    <strong>{step.title}</strong>
+                    <p>{step.body}</p>
+                    {(step.evidence_refs ?? []).length > 0 ? (
+                      <small>{step.evidence_refs.join(', ')}</small>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </article>
+          ) : null}
           <div className="action-suggestions" aria-label="行动建议">
             {actionSuggestions.map((suggestion) => (
               <article className="action-suggestion" key={suggestion.id}>
@@ -207,6 +236,7 @@ export function App() {
   function handleSelectProject(projectID: string) {
     setSelectedProjectID(projectID)
     setActionSuggestions([])
+    setAgentRuns([])
   }
 }
 
@@ -247,4 +277,22 @@ function formatActionStatus(status: ActionSuggestion['status']): string {
     failed: '失败',
   }
   return labels[status]
+}
+
+function formatAgentType(agentType: string): string {
+  const labels: Record<string, string> = {
+    risk_scout: 'Risk Scout',
+    pr_doctor: 'PR Doctor',
+  }
+  return labels[agentType] ?? agentType
+}
+
+function formatAgentRunStatus(status: string): string {
+  const labels: Record<string, string> = {
+    queued: '排队中',
+    running: '调查中',
+    succeeded: '已完成',
+    failed: '失败',
+  }
+  return labels[status] ?? status
 }

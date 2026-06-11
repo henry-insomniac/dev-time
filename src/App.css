@@ -124,6 +124,44 @@
   gap: 10px;
 }
 
+.agent-run {
+  display: grid;
+  gap: 12px;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.agent-run-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.agent-run-header span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.agent-steps {
+  display: grid;
+  gap: 8px;
+}
+
+.agent-step {
+  display: grid;
+  gap: 4px;
+  border-left: 4px solid #00d084;
+  padding-left: 10px;
+}
+
+.agent-step small {
+  overflow-wrap: anywhere;
+}
+
 .action-suggestion {
   display: grid;
   gap: 10px;

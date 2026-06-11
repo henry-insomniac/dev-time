@@ -92,6 +92,32 @@ describe('Dev Time risk workspace', () => {
           ],
         })
       }
+      if (url.endsWith('/api/projects/project_server/agent-runs')) {
+        return jsonResponse({
+          agent_runs: [
+            {
+              id: 'run_job_123',
+              agent_job_id: 'job_123',
+              project_id: 'project_server',
+              risk_assessment_id: 'risk_123',
+              agent_type: 'pr_doctor',
+              status: 'succeeded',
+              summary: 'PR #18 被失败的 go test 检查阻塞。',
+              steps: [
+                {
+                  id: 'step_1',
+                  agent_run_id: 'run_job_123',
+                  step_type: 'completed',
+                  status: 'succeeded',
+                  title: 'Agent 完成风险判断',
+                  body: 'PR #18 被失败的 go test 检查阻塞。',
+                  evidence_refs: ['event_check-run-123'],
+                },
+              ],
+            },
+          ],
+        })
+      }
       if (url.endsWith('/api/action-suggestions/action_123/confirm')) {
         return jsonResponse({
           id: 'action_123',
@@ -112,6 +138,10 @@ describe('Dev Time risk workspace', () => {
     expect(
       await screen.findByText(/请先修复 go test，再请求 Review/i),
     ).toBeInTheDocument()
+    expect(screen.getByText(/Agent 完成风险判断/i)).toBeInTheDocument()
+    expect(
+      screen.getAllByText(/PR #18 被失败的 go test 检查阻塞/i).length,
+    ).toBeGreaterThan(0)
 
     fireEvent.click(screen.getByRole('button', { name: /确认执行/i }))
 
