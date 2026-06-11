@@ -296,6 +296,12 @@ describe('Dev Time risk workspace', () => {
       within(screen.getByLabelText(/Agent 对话记录/i)).getByText('Agent'),
     ).toBeInTheDocument()
     expect(screen.getByText('event_check-run-123')).toBeInTheDocument()
+    expect(
+      screen
+        .getByLabelText(/行动建议/i)
+        .compareDocumentPosition(screen.getByLabelText(/Agent 对话记录/i)) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 })
 

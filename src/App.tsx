@@ -1,5 +1,5 @@
 import { Bot, CheckCircle2, GitPullRequest, ShieldAlert } from 'lucide-react'
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 
 import {
   confirmActionSuggestion,
@@ -64,6 +64,7 @@ export function App() {
     'workspace',
   )
   const [apiError, setAPIError] = useState('')
+  const agentMessagesRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let ignore = false
@@ -120,6 +121,14 @@ export function App() {
       ignore = true
     }
   }, [selectedProjectID])
+
+  useEffect(() => {
+    const messages = agentMessagesRef.current
+    if (messages === null) {
+      return
+    }
+    messages.scrollTop = messages.scrollHeight
+  }, [agentConversationTurns.length])
 
   const selectedProject = useMemo(
     () =>
@@ -223,37 +232,11 @@ export function App() {
             <p>当前项目：{selectedProject.name}</p>
           </div>
         </div>
-        <div className="agent-messages">
+        <div className="agent-messages" ref={agentMessagesRef}>
           <section className="agent-summary" aria-label="风险摘要">
             <strong>风险摘要</strong>
             <p>{selectedProject.reason}</p>
           </section>
-          {agentConversationTurns.length > 0 ? (
-            <div className="conversation-turns" aria-label="Agent 对话记录">
-              {agentConversationTurns.map((turn) => (
-                <article className="conversation-turn" key={turn.id}>
-                  <div className="message-row message-row-user">
-                    <p className="message-bubble message-bubble-user">
-                      {turn.user_message}
-                    </p>
-                  </div>
-                  <div className="message-row message-row-agent">
-                    <div className="message-bubble message-bubble-agent">
-                      <strong>Agent</strong>
-                      <p>{turn.agent_response}</p>
-                    </div>
-                  </div>
-                  {turn.evidence_refs.length > 0 ? (
-                    <div className="evidence-chips" aria-label="回复证据">
-                      {turn.evidence_refs.map((evidenceRef) => (
-                        <span key={evidenceRef}>{evidenceRef}</span>
-                      ))}
-                    </div>
-                  ) : null}
-                </article>
-              ))}
-            </div>
-          ) : null}
           {agentRuns[0] ? (
             <article className="agent-run">
               <div className="agent-run-header">
@@ -301,6 +284,32 @@ export function App() {
               </article>
             ))}
           </div>
+          {agentConversationTurns.length > 0 ? (
+            <div className="conversation-turns" aria-label="Agent 对话记录">
+              {agentConversationTurns.map((turn) => (
+                <article className="conversation-turn" key={turn.id}>
+                  <div className="message-row message-row-user">
+                    <p className="message-bubble message-bubble-user">
+                      {turn.user_message}
+                    </p>
+                  </div>
+                  <div className="message-row message-row-agent">
+                    <div className="message-bubble message-bubble-agent">
+                      <strong>Agent</strong>
+                      <p>{turn.agent_response}</p>
+                    </div>
+                  </div>
+                  {turn.evidence_refs.length > 0 ? (
+                    <div className="evidence-chips" aria-label="回复证据">
+                      {turn.evidence_refs.map((evidenceRef) => (
+                        <span key={evidenceRef}>{evidenceRef}</span>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          ) : null}
         </div>
         <form className="agent-input" onSubmit={handleSendAgentMessage}>
           <label htmlFor="agent-message">询问 Agent</label>
