@@ -1,7 +1,22 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
 .workspace {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-columns: minmax(220px, 280px) minmax(360px, 1fr) minmax(280px, 360px);
+  overflow: hidden;
   background: #f6f2ea;
   color: #172033;
   font-family:
@@ -12,11 +27,13 @@
 .risk-queue,
 .risk-detail,
 .agent-dock {
+  min-height: 0;
   min-width: 0;
   padding: 20px;
 }
 
 .risk-queue {
+  overflow: auto;
   border-right: 2px solid #172033;
 }
 
@@ -81,6 +98,8 @@
 }
 
 .risk-detail {
+  min-height: 0;
+  overflow: auto;
   display: grid;
   align-content: start;
   gap: 20px;
@@ -192,19 +211,22 @@
 }
 
 .agent-dock {
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 16px;
+  overflow: hidden;
   border-left: 2px solid #172033;
   background: #bcff63;
 }
 
 .agent-messages {
+  min-height: 0;
   display: grid;
   align-content: start;
   gap: 14px;
-  overflow: auto;
+  overflow-y: auto;
   border: 2px solid #172033;
   border-radius: 8px;
   background: #f7ffe6;
@@ -359,12 +381,17 @@
 
 @media (max-width: 900px) {
   .workspace {
+    height: auto;
+    min-height: 100vh;
     grid-template-columns: 1fr;
+    overflow: visible;
   }
 
   .risk-queue,
   .agent-dock {
+    height: auto;
     min-height: auto;
+    overflow: visible;
     border: 0;
   }
 
