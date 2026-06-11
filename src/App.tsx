@@ -1,7 +1,13 @@
-import { Bot, GitPullRequest, ShieldAlert } from 'lucide-react'
+import { Bot, CheckCircle2, GitPullRequest, ShieldAlert } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
-import { fetchProjects, type ProjectSummary } from './api'
+import {
+  confirmActionSuggestion,
+  fetchActionSuggestions,
+  fetchProjects,
+  type ActionSuggestion,
+  type ProjectSummary,
+} from './api'
 import './App.css'
 
 type RiskProject = {
@@ -35,6 +41,7 @@ const projects: RiskProject[] = [
 export function App() {
   const [riskProjects, setRiskProjects] = useState(projects)
   const [selectedProjectID, setSelectedProjectID] = useState(projects[0].id)
+  const [actionSuggestions, setActionSuggestions] = useState<ActionSuggestion[]>([])
 
   useEffect(() => {
     let ignore = false
@@ -47,6 +54,7 @@ export function App() {
         const mappedProjects = loadedProjects.map(mapProjectSummary)
         setRiskProjects(mappedProjects)
         setSelectedProjectID(mappedProjects[0].id)
+        setActionSuggestions([])
       })
       .catch(() => {
         // Keep the local demo queue available when the API is not running.
@@ -56,6 +64,26 @@ export function App() {
       ignore = true
     }
   }, [])
+
+  useEffect(() => {
+    let ignore = false
+
+    fetchActionSuggestions(selectedProjectID)
+      .then((loadedSuggestions) => {
+        if (!ignore) {
+          setActionSuggestions(loadedSuggestions)
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setActionSuggestions([])
+        }
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [selectedProjectID])
 
   const selectedProject = useMemo(
     () =>
@@ -81,7 +109,7 @@ export function App() {
                   : 'queue-item'
               }
               key={project.id}
-              onClick={() => setSelectedProjectID(project.id)}
+              onClick={() => handleSelectProject(project.id)}
               type="button"
             >
               <span>{project.name}</span>
@@ -117,14 +145,62 @@ export function App() {
         </div>
         <div className="agent-messages">
           <p>{selectedProject.reason}</p>
+          <div className="action-suggestions" aria-label="Action suggestions">
+            {actionSuggestions.map((suggestion) => (
+              <article className="action-suggestion" key={suggestion.id}>
+                <div className="action-suggestion-header">
+                  <CheckCircle2 aria-hidden="true" size={18} />
+                  <strong>{suggestion.action_type}</strong>
+                  <span>Status: {suggestion.status}</span>
+                </div>
+                <p>{suggestion.draft_body}</p>
+                <small>{suggestion.target_ref}</small>
+                {suggestion.status === 'pending_user_confirmation' ? (
+                  <button
+                    onClick={() => handleConfirmAction(suggestion.id)}
+                    type="button"
+                  >
+                    Confirm action
+                  </button>
+                ) : null}
+              </article>
+            ))}
+          </div>
         </div>
-        <form className="agent-input">
+        <form className="agent-input" onSubmit={(event) => event.preventDefault()}>
           <label htmlFor="agent-message">Ask Agent</label>
           <input id="agent-message" placeholder="Ask about this risk" />
         </form>
       </aside>
     </main>
   )
+
+  function handleConfirmAction(suggestionID: string) {
+    confirmActionSuggestion(suggestionID)
+      .then((confirmedSuggestion) => {
+        setActionSuggestions((currentSuggestions) =>
+          currentSuggestions.map((suggestion) =>
+            suggestion.id === confirmedSuggestion.id
+              ? confirmedSuggestion
+              : suggestion,
+          ),
+        )
+      })
+      .catch(() => {
+        setActionSuggestions((currentSuggestions) =>
+          currentSuggestions.map((suggestion) =>
+            suggestion.id === suggestionID
+              ? { ...suggestion, status: 'failed' }
+              : suggestion,
+          ),
+        )
+      })
+  }
+
+  function handleSelectProject(projectID: string) {
+    setSelectedProjectID(projectID)
+    setActionSuggestions([])
+  }
 }
 
 function mapProjectSummary(project: ProjectSummary): RiskProject {

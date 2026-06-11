@@ -96,11 +96,59 @@
 }
 
 .agent-messages {
+  display: grid;
+  align-content: start;
+  gap: 14px;
   overflow: auto;
   border: 2px solid #172033;
   border-radius: 8px;
   background: #f7ffe6;
   padding: 14px;
+}
+
+.agent-messages p {
+  margin: 0;
+}
+
+.action-suggestions {
+  display: grid;
+  gap: 10px;
+}
+
+.action-suggestion {
+  display: grid;
+  gap: 10px;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.action-suggestion-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-suggestion-header span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.action-suggestion small {
+  overflow-wrap: anywhere;
+}
+
+.action-suggestion button {
+  min-height: 38px;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #00d084;
+  color: #172033;
+  font: inherit;
+  font-weight: 700;
 }
 
 .agent-input {

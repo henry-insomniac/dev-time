@@ -64,4 +64,69 @@ describe('Dev Time risk workspace', () => {
       screen.getByText(/agent context: dev-time-server/i),
     ).toBeInTheDocument()
   })
+
+  it('shows and confirms action suggestions for the selected project', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/api/projects')) {
+        return jsonResponse({
+          projects: [
+            {
+              id: 'project_server',
+              name: 'dev-time-server',
+              risk_score: 82,
+              risk_level: 'high',
+            },
+          ],
+        })
+      }
+      if (url.endsWith('/api/projects/project_server/action-suggestions')) {
+        return jsonResponse({
+          action_suggestions: [
+            {
+              id: 'action_123',
+              project_id: 'project_server',
+              action_type: 'pr_comment',
+              status: 'pending_user_confirmation',
+              target_ref: 'pull_request:18',
+              draft_body: 'Please fix go test before review.',
+              evidence_refs: ['event_check-run-123'],
+            },
+          ],
+        })
+      }
+      if (url.endsWith('/api/action-suggestions/action_123/confirm')) {
+        return jsonResponse({
+          id: 'action_123',
+          project_id: 'project_server',
+          action_type: 'pr_comment',
+          status: 'succeeded',
+          target_ref: 'pull_request:18',
+          draft_body: 'Please fix go test before review.',
+          evidence_refs: ['event_check-run-123'],
+        })
+      }
+      return jsonResponse({ action_suggestions: [] })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+
+    expect(
+      await screen.findByText(/please fix go test before review/i),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /confirm action/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/status: succeeded/i)).toBeInTheDocument()
+    })
+  })
 })
+
+function jsonResponse(body: unknown): Response {
+  return {
+    ok: true,
+    json: async () => body,
+  } as Response
+}
