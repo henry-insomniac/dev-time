@@ -6,9 +6,13 @@ import {
   fetchAgentRuns,
   fetchActionSuggestions,
   fetchLLMProviders,
+  fetchAgentConversation,
   fetchProjects,
+  fetchProjectRisk,
   saveLLMProvider,
+  sendAgentConversationTurn,
   type AgentRun,
+  type AgentConversationTurn,
   type ActionSuggestion,
   type LLMProviderConfig,
   type ProjectSummary,
@@ -50,6 +54,12 @@ export function App() {
   const [agentRuns, setAgentRuns] = useState<AgentRun[]>([])
   const [llmProviders, setLLMProviders] = useState<LLMProviderConfig[]>([])
   const [llmAPIKeys, setLLMAPIKeys] = useState<Record<string, string>>({})
+  const [agentMessage, setAgentMessage] = useState('')
+  const [agentConversationTurns, setAgentConversationTurns] = useState<
+    AgentConversationTurn[]
+  >([])
+  const [isSendingAgentMessage, setIsSendingAgentMessage] = useState(false)
+  const [agentMessageError, setAgentMessageError] = useState('')
   const [currentView, setCurrentView] = useState<'workspace' | 'llm-settings'>(
     'workspace',
   )
@@ -68,6 +78,9 @@ export function App() {
         setSelectedProjectID(mappedProjects[0].id)
         setActionSuggestions([])
         setAgentRuns([])
+        setAgentConversationTurns([])
+        setAgentMessage('')
+        setAgentMessageError('')
         setAPIError('')
       })
       .catch((error: unknown) => {
@@ -212,6 +225,19 @@ export function App() {
         </div>
         <div className="agent-messages">
           <p>{selectedProject.reason}</p>
+          {agentConversationTurns.length > 0 ? (
+            <div className="conversation-turns" aria-label="Agent 对话记录">
+              {agentConversationTurns.map((turn) => (
+                <article className="conversation-turn" key={turn.id}>
+                  <p className="conversation-user">我：{turn.user_message}</p>
+                  <p className="conversation-agent">Agent：{turn.agent_response}</p>
+                  {turn.evidence_refs.length > 0 ? (
+                    <small>证据：{turn.evidence_refs.join(', ')}</small>
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          ) : null}
           {agentRuns[0] ? (
             <article className="agent-run">
               <div className="agent-run-header">
@@ -254,9 +280,25 @@ export function App() {
             ))}
           </div>
         </div>
-        <form className="agent-input" onSubmit={(event) => event.preventDefault()}>
+        <form className="agent-input" onSubmit={handleSendAgentMessage}>
           <label htmlFor="agent-message">询问 Agent</label>
-          <input id="agent-message" placeholder="询问这个风险" />
+          <div className="agent-input-row">
+            <input
+              id="agent-message"
+              onChange={(event) => setAgentMessage(event.target.value)}
+              placeholder="询问这个风险"
+              value={agentMessage}
+            />
+            <button
+              disabled={isSendingAgentMessage || agentMessage.trim() === ''}
+              type="submit"
+            >
+              {isSendingAgentMessage ? '发送中' : '发送'}
+            </button>
+          </div>
+          {agentMessageError ? (
+            <p className="form-error">{agentMessageError}</p>
+          ) : null}
         </form>
       </aside>
     </main>
@@ -289,6 +331,9 @@ export function App() {
     setSelectedProjectID(projectID)
     setActionSuggestions([])
     setAgentRuns([])
+    setAgentConversationTurns([])
+    setAgentMessage('')
+    setAgentMessageError('')
   }
 
   function openLLMSettings() {
@@ -302,6 +347,40 @@ export function App() {
             : 'LLM 设置加载失败',
         )
       })
+  }
+
+  function handleSendAgentMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const message = agentMessage.trim()
+    if (message === '') {
+      return
+    }
+
+    setIsSendingAgentMessage(true)
+    setAgentMessageError('')
+    fetchProjectRisk(selectedProject.id)
+      .then((projectRisk) =>
+        fetchAgentConversation(
+          selectedProject.id,
+          projectRisk.assessment.id,
+        ).then((conversation) =>
+          sendAgentConversationTurn(
+            conversation.id,
+            projectRisk.assessment.id,
+            message,
+          ),
+        ),
+      )
+      .then((turn) => {
+        setAgentConversationTurns((currentTurns) => [...currentTurns, turn])
+        setAgentMessage('')
+      })
+      .catch((error: unknown) => {
+        setAgentMessageError(
+          error instanceof Error ? `发送失败：${error.message}` : '发送失败',
+        )
+      })
+      .finally(() => setIsSendingAgentMessage(false))
   }
 }
 

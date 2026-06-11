@@ -215,6 +215,85 @@ describe('Dev Time risk workspace', () => {
     })
     expect(screen.queryByText(/sk-test-secret/i)).not.toBeInTheDocument()
   })
+
+  it('发送 Agent 对话消息并展示回复', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/api/projects')) {
+        return jsonResponse({
+          projects: [
+            {
+              id: 'project_server',
+              name: 'dev-time-server',
+              risk_score: 82,
+              risk_level: 'high',
+            },
+          ],
+        })
+      }
+      if (url.endsWith('/api/projects/project_server/action-suggestions')) {
+        return jsonResponse({ action_suggestions: [] })
+      }
+      if (url.endsWith('/api/projects/project_server/agent-runs')) {
+        return jsonResponse({ agent_runs: [] })
+      }
+      if (url.endsWith('/api/projects/project_server/risk')) {
+        return jsonResponse({
+          assessment: {
+            id: 'risk_123',
+            project_id: 'project_server',
+            score: 82,
+            level: 'high',
+            trend: 'up',
+          },
+          signals: [],
+        })
+      }
+      if (
+        url.endsWith(
+          '/api/projects/project_server/agent-conversation?risk_assessment_id=risk_123',
+        )
+      ) {
+        return jsonResponse({
+          id: 'conversation_project_server',
+          project_id: 'project_server',
+          latest_risk_assessment_id: 'risk_123',
+          status: 'active',
+        })
+      }
+      if (
+        url.endsWith('/api/agent-conversations/conversation_project_server/turns') &&
+        init?.method === 'POST'
+      ) {
+        expect(JSON.parse(String(init.body))).toEqual({
+          message: '为什么是高风险？',
+          risk_assessment_id: 'risk_123',
+        })
+        return jsonResponse({
+          id: 'turn_123',
+          conversation_id: 'conversation_project_server',
+          user_message: '为什么是高风险？',
+          agent_response: '因为 go test 持续失败并阻塞交付。',
+          evidence_refs: ['event_check-run-123'],
+        })
+      }
+      return jsonResponse({})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+
+    await screen.findByText(/当前项目：dev-time-server/i)
+    fireEvent.change(screen.getByLabelText(/询问 Agent/i), {
+      target: { value: '为什么是高风险？' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /发送/i }))
+
+    expect(
+      await screen.findByText(/Agent：因为 go test 持续失败并阻塞交付。/i),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/证据：event_check-run-123/i)).toBeInTheDocument()
+  })
 })
 
 function jsonResponse(body: unknown): Response {

@@ -48,6 +48,39 @@ export type AgentRunsResponse = {
   agent_runs: AgentRun[]
 }
 
+export type ProjectRisk = {
+  assessment: {
+    id: string
+    project_id: string
+    score: number
+    level: string
+    trend: string
+  }
+  signals: Array<{
+    id: string
+    project_id: string
+    category: string
+    severity: number
+    reason: string
+    evidence_refs: string[]
+  }>
+}
+
+export type AgentConversation = {
+  id: string
+  project_id: string
+  latest_risk_assessment_id: string
+  status: string
+}
+
+export type AgentConversationTurn = {
+  id: string
+  conversation_id: string
+  user_message: string
+  agent_response: string
+  evidence_refs: string[]
+}
+
 export type LLMProviderConfig = {
   id: string
   provider: 'openai' | 'deepseek'
@@ -103,6 +136,53 @@ export async function fetchAgentRuns(projectID: string): Promise<AgentRun[]> {
 
   const body = (await response.json()) as AgentRunsResponse
   return body.agent_runs ?? []
+}
+
+export async function fetchProjectRisk(projectID: string): Promise<ProjectRisk> {
+  const response = await fetch(`${apiBaseURL}/api/projects/${projectID}/risk`)
+  if (!response.ok) {
+    throw new Error(`load project risk failed: ${response.status}`)
+  }
+
+  return (await response.json()) as ProjectRisk
+}
+
+export async function fetchAgentConversation(
+  projectID: string,
+  riskAssessmentID: string,
+): Promise<AgentConversation> {
+  const params = new URLSearchParams({ risk_assessment_id: riskAssessmentID })
+  const response = await fetch(
+    `${apiBaseURL}/api/projects/${projectID}/agent-conversation?${params}`,
+  )
+  if (!response.ok) {
+    throw new Error(`load agent conversation failed: ${response.status}`)
+  }
+
+  return (await response.json()) as AgentConversation
+}
+
+export async function sendAgentConversationTurn(
+  conversationID: string,
+  riskAssessmentID: string,
+  message: string,
+): Promise<AgentConversationTurn> {
+  const response = await fetch(
+    `${apiBaseURL}/api/agent-conversations/${conversationID}/turns`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        risk_assessment_id: riskAssessmentID,
+      }),
+    },
+  )
+  if (!response.ok) {
+    throw new Error(`send agent conversation turn failed: ${response.status}`)
+  }
+
+  return (await response.json()) as AgentConversationTurn
 }
 
 export async function confirmActionSuggestion(
