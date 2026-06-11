@@ -1,13 +1,16 @@
 import { Bot, CheckCircle2, GitPullRequest, ShieldAlert } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 
 import {
   confirmActionSuggestion,
   fetchAgentRuns,
   fetchActionSuggestions,
+  fetchLLMProviders,
   fetchProjects,
+  saveLLMProvider,
   type AgentRun,
   type ActionSuggestion,
+  type LLMProviderConfig,
   type ProjectSummary,
 } from './api'
 import './App.css'
@@ -45,6 +48,11 @@ export function App() {
   const [selectedProjectID, setSelectedProjectID] = useState(projects[0].id)
   const [actionSuggestions, setActionSuggestions] = useState<ActionSuggestion[]>([])
   const [agentRuns, setAgentRuns] = useState<AgentRun[]>([])
+  const [llmProviders, setLLMProviders] = useState<LLMProviderConfig[]>([])
+  const [llmAPIKeys, setLLMAPIKeys] = useState<Record<string, string>>({})
+  const [currentView, setCurrentView] = useState<'workspace' | 'llm-settings'>(
+    'workspace',
+  )
   const [apiError, setAPIError] = useState('')
 
   useEffect(() => {
@@ -114,6 +122,13 @@ export function App() {
           <ShieldAlert aria-hidden="true" size={18} />
           <h1 id="workspace-title">风险队列</h1>
         </div>
+        <button
+          className="settings-button"
+          onClick={() => openLLMSettings()}
+          type="button"
+        >
+          LLM 设置
+        </button>
         <div className="queue-list">
           {apiError ? <p className="api-error">{apiError}</p> : null}
           {riskProjects.map((project) => (
@@ -135,21 +150,57 @@ export function App() {
         </div>
       </section>
 
-      <section className="risk-detail" aria-label="当前风险">
-        <div className="detail-header">
-          <GitPullRequest aria-hidden="true" size={20} />
-          <div>
-            <h2>{selectedProject.name}</h2>
-            <p>风险分 {selectedProject.score}</p>
+      {currentView === 'llm-settings' ? (
+        <section className="risk-detail" aria-label="LLM 设置">
+          <div className="detail-header">
+            <Bot aria-hidden="true" size={20} />
+            <div>
+              <h2>LLM 设置</h2>
+              <p>配置 Agent 使用的模型 Provider</p>
+            </div>
           </div>
-        </div>
+          <div className="llm-settings-list">
+            {llmProviders.map((provider) => (
+              <LLMProviderCard
+                apiKey={llmAPIKeys[provider.provider] ?? ''}
+                key={provider.provider}
+                onAPIKeyChange={(value) =>
+                  setLLMAPIKeys((current) => ({
+                    ...current,
+                    [provider.provider]: value,
+                  }))
+                }
+                onProviderChange={(updatedProvider) =>
+                  setLLMProviders((currentProviders) =>
+                    currentProviders.map((currentProvider) =>
+                      currentProvider.provider === updatedProvider.provider
+                        ? updatedProvider
+                        : currentProvider,
+                    ),
+                  )
+                }
+                provider={provider}
+              />
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section className="risk-detail" aria-label="当前风险">
+          <div className="detail-header">
+            <GitPullRequest aria-hidden="true" size={20} />
+            <div>
+              <h2>{selectedProject.name}</h2>
+              <p>风险分 {selectedProject.score}</p>
+            </div>
+          </div>
 
-        <article className="evidence-panel">
-          <h3>证据包</h3>
-          <p>{selectedProject.reason}</p>
-          <small>{selectedProject.evidence}</small>
-        </article>
-      </section>
+          <article className="evidence-panel">
+            <h3>证据包</h3>
+            <p>{selectedProject.reason}</p>
+            <small>{selectedProject.evidence}</small>
+          </article>
+        </section>
+      )}
 
       <aside className="agent-dock" aria-label="Agent 助手">
         <div className="agent-header">
@@ -234,10 +285,114 @@ export function App() {
   }
 
   function handleSelectProject(projectID: string) {
+    setCurrentView('workspace')
     setSelectedProjectID(projectID)
     setActionSuggestions([])
     setAgentRuns([])
   }
+
+  function openLLMSettings() {
+    setCurrentView('llm-settings')
+    fetchLLMProviders()
+      .then((providers) => setLLMProviders(providers))
+      .catch((error: unknown) => {
+        setAPIError(
+          error instanceof Error
+            ? `LLM 设置加载失败：${error.message}`
+            : 'LLM 设置加载失败',
+        )
+      })
+  }
+}
+
+type LLMProviderCardProps = {
+  provider: LLMProviderConfig
+  apiKey: string
+  onAPIKeyChange: (value: string) => void
+  onProviderChange: (provider: LLMProviderConfig) => void
+}
+
+function LLMProviderCard({
+  provider,
+  apiKey,
+  onAPIKeyChange,
+  onProviderChange,
+}: LLMProviderCardProps) {
+  const providerLabel = formatProviderLabel(provider.provider)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+
+  function handleSaveProvider(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setIsSaving(true)
+    setSaveError('')
+    saveLLMProvider({
+      provider: provider.provider,
+      base_url: provider.base_url,
+      model: provider.model,
+      api_key: apiKey,
+    })
+      .then((savedProvider) => {
+        onProviderChange(savedProvider)
+        onAPIKeyChange('')
+      })
+      .catch((error: unknown) => {
+        setSaveError(
+          error instanceof Error ? error.message : `${providerLabel} 保存失败`,
+        )
+      })
+      .finally(() => setIsSaving(false))
+  }
+
+  return (
+    <form className="llm-provider-card" onSubmit={handleSaveProvider}>
+      <div className="llm-provider-header">
+        <h3>{providerLabel}</h3>
+        <strong className={provider.configured ? 'status-ready' : 'status-empty'}>
+          {provider.configured ? `${providerLabel} 已配置` : '未配置'}
+        </strong>
+      </div>
+      <label>
+        Base URL
+        <input
+          aria-label={`${providerLabel} Base URL`}
+          onChange={(event) =>
+            onProviderChange({ ...provider, base_url: event.target.value })
+          }
+          value={provider.base_url}
+        />
+      </label>
+      <label>
+        模型
+        <input
+          aria-label={`${providerLabel} 模型`}
+          onChange={(event) =>
+            onProviderChange({ ...provider, model: event.target.value })
+          }
+          value={provider.model}
+        />
+      </label>
+      <label>
+        API Key
+        <input
+          aria-label={`${providerLabel} API Key`}
+          onChange={(event) => onAPIKeyChange(event.target.value)}
+          placeholder={
+            provider.configured ? `已保存，尾号 ${provider.key_last_four}` : '输入 API Key'
+          }
+          type="password"
+          value={apiKey}
+        />
+      </label>
+      <button
+        disabled={isSaving || apiKey.trim() === ''}
+        type="submit"
+      >
+        {isSaving ? '保存中' : `保存 ${providerLabel}`}
+      </button>
+      {saveError ? <p className="form-error">{saveError}</p> : null}
+    </form>
+  )
 }
 
 function mapProjectSummary(project: ProjectSummary): RiskProject {
@@ -295,4 +450,12 @@ function formatAgentRunStatus(status: string): string {
     failed: '失败',
   }
   return labels[status] ?? status
+}
+
+function formatProviderLabel(provider: LLMProviderConfig['provider']): string {
+  const labels: Record<LLMProviderConfig['provider'], string> = {
+    openai: 'OpenAI',
+    deepseek: 'DeepSeek',
+  }
+  return labels[provider]
 }

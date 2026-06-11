@@ -48,6 +48,27 @@ export type AgentRunsResponse = {
   agent_runs: AgentRun[]
 }
 
+export type LLMProviderConfig = {
+  id: string
+  provider: 'openai' | 'deepseek'
+  base_url: string
+  model: string
+  configured: boolean
+  key_last_four: string
+  enabled: boolean
+}
+
+export type LLMProvidersResponse = {
+  providers: LLMProviderConfig[]
+}
+
+export type SaveLLMProviderInput = {
+  provider: LLMProviderConfig['provider']
+  base_url: string
+  model: string
+  api_key: string
+}
+
 const apiBaseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 export async function fetchProjects(): Promise<ProjectSummary[]> {
@@ -96,4 +117,29 @@ export async function confirmActionSuggestion(
   }
 
   return (await response.json()) as ActionSuggestion
+}
+
+export async function fetchLLMProviders(): Promise<LLMProviderConfig[]> {
+  const response = await fetch(`${apiBaseURL}/api/settings/llm-providers`)
+  if (!response.ok) {
+    throw new Error(`load llm providers failed: ${response.status}`)
+  }
+
+  const body = (await response.json()) as LLMProvidersResponse
+  return body.providers ?? []
+}
+
+export async function saveLLMProvider(
+  input: SaveLLMProviderInput,
+): Promise<LLMProviderConfig> {
+  const response = await fetch(`${apiBaseURL}/api/settings/llm-providers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!response.ok) {
+    throw new Error(`save llm provider failed: ${response.status}`)
+  }
+
+  return (await response.json()) as LLMProviderConfig
 }

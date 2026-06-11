@@ -116,6 +116,7 @@ pnpm test:e2e
 - 不提交 `.env`、密钥、令牌、Cookie、账号凭据。
 - 示例配置使用 `.env.example` 或文档片段，不使用真实值。
 - 前端不得记录或展示 LLM API Key 明文。
+- LLM 设置页当前只展示和提交 OpenAI、DeepSeek 两类 Provider；不得在 UI 中出现未被后端支持的 Provider。
 - 前端不得缓存 GitHub installation token。
 - 涉及 GitHub 写入的按钮必须展示目标对象、草稿正文、权限要求和确认状态。
 

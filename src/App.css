@@ -42,6 +42,18 @@
   margin-top: 18px;
 }
 
+.settings-button {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 18px;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #172033;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+}
+
 .api-error {
   border: 2px solid #172033;
   border-radius: 8px;
@@ -93,6 +105,90 @@
 
 .evidence-panel h3 {
   margin: 0 0 10px;
+}
+
+.llm-settings-list {
+  display: grid;
+  gap: 14px;
+}
+
+.llm-provider-card {
+  display: grid;
+  gap: 14px;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.llm-provider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.llm-provider-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.llm-provider-header strong {
+  border: 2px solid #172033;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.status-ready {
+  background: #00d084;
+}
+
+.status-empty {
+  background: #fff4c7;
+}
+
+.llm-provider-card label {
+  display: grid;
+  gap: 6px;
+  font-weight: 800;
+}
+
+.llm-provider-card input {
+  min-height: 42px;
+  min-width: 0;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #172033;
+  font: inherit;
+  font-weight: 500;
+}
+
+.llm-provider-card button {
+  min-height: 42px;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #00d084;
+  color: #172033;
+  font: inherit;
+  font-weight: 800;
+}
+
+.llm-provider-card button:disabled {
+  background: #d6d1c6;
+  color: #676f80;
+  cursor: not-allowed;
+}
+
+.form-error {
+  margin: 0;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #ffe2e2;
+  padding: 10px;
+  font-weight: 700;
 }
 
 .agent-dock {

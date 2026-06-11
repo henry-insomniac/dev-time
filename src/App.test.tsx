@@ -149,6 +149,72 @@ describe('Dev Time risk workspace', () => {
       expect(screen.getByText(/状态：已执行/i)).toBeInTheDocument()
     })
   })
+
+  it('配置 OpenAI 和 DeepSeek LLM Provider', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/api/settings/llm-providers') && init?.method === 'POST') {
+        expect(JSON.parse(String(init.body))).toEqual({
+          provider: 'openai',
+          base_url: 'https://api.openai.com/v1',
+          model: 'gpt-4.1',
+          api_key: 'sk-test-secret',
+        })
+        return jsonResponse({
+          id: 'llm_provider_openai',
+          provider: 'openai',
+          base_url: 'https://api.openai.com/v1',
+          model: 'gpt-4.1',
+          configured: true,
+          key_last_four: 'cret',
+          enabled: true,
+        })
+      }
+      if (url.endsWith('/api/settings/llm-providers')) {
+        return jsonResponse({
+          providers: [
+            {
+              id: 'llm_provider_openai',
+              provider: 'openai',
+              base_url: 'https://api.openai.com/v1',
+              model: 'gpt-4.1',
+              configured: false,
+              key_last_four: '',
+              enabled: false,
+            },
+            {
+              id: 'llm_provider_deepseek',
+              provider: 'deepseek',
+              base_url: 'https://api.deepseek.com/v1',
+              model: 'deepseek-chat',
+              configured: false,
+              key_last_four: '',
+              enabled: false,
+            },
+          ],
+        })
+      }
+      return jsonResponse({ projects: [] })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: /LLM 设置/i }))
+
+    expect(await screen.findByText('OpenAI')).toBeInTheDocument()
+    expect(screen.getByText('DeepSeek')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/OpenAI API Key/i), {
+      target: { value: 'sk-test-secret' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /保存 OpenAI/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/OpenAI 已配置/i)).toBeInTheDocument()
+    })
+    expect(screen.queryByText(/sk-test-secret/i)).not.toBeInTheDocument()
+  })
 })
 
 function jsonResponse(body: unknown): Response {
