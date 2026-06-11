@@ -8,33 +8,33 @@ describe('Dev Time risk workspace', () => {
     vi.unstubAllGlobals()
   })
 
-  it('selects the highest risk project by default', () => {
+  it('默认选择最高风险项目', () => {
     render(<App />)
 
     expect(
       screen.getByRole('heading', { name: /dev-time-agent/i }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/risk score 70/i)).toBeInTheDocument()
+    expect(screen.getByText(/风险分 70/i)).toBeInTheDocument()
     expect(
-      within(screen.getByLabelText(/selected risk/i)).getByText(
-        /test failed and is blocking progress/i,
+      within(screen.getByLabelText(/当前风险/i)).getByText(
+        /测试失败，正在阻塞交付进度/i,
       ),
     ).toBeInTheDocument()
   })
 
-  it('syncs the detail area and agent dock when a project is selected', () => {
+  it('选择项目时同步详情区和 Agent 助手', () => {
     render(<App />)
 
-    fireEvent.click(screen.getByRole('button', { name: /dev-time stable/i }))
+    fireEvent.click(screen.getByRole('button', { name: /dev-time 稳定/i }))
 
     expect(
       screen.getByRole('heading', { name: /dev-time$/i }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/risk score 0/i)).toBeInTheDocument()
-    expect(screen.getByText(/agent context: dev-time/i)).toBeInTheDocument()
+    expect(screen.getByText(/风险分 0/i)).toBeInTheDocument()
+    expect(screen.getByText(/当前项目：dev-time/i)).toBeInTheDocument()
   })
 
-  it('loads projects from the server risk queue', async () => {
+  it('从服务端加载项目风险队列', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -56,16 +56,14 @@ describe('Dev Time risk workspace', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole('button', { name: /dev-time-server high/i }),
+        screen.getByRole('button', { name: /dev-time-server 高/i }),
       ).toBeInTheDocument()
     })
-    expect(screen.getByText(/risk score 82/i)).toBeInTheDocument()
-    expect(
-      screen.getByText(/agent context: dev-time-server/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/风险分 82/i)).toBeInTheDocument()
+    expect(screen.getByText(/当前项目：dev-time-server/i)).toBeInTheDocument()
   })
 
-  it('shows and confirms action suggestions for the selected project', async () => {
+  it('展示并确认当前项目行动建议', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
       if (url.endsWith('/api/projects')) {
@@ -89,7 +87,7 @@ describe('Dev Time risk workspace', () => {
               action_type: 'pr_comment',
               status: 'pending_user_confirmation',
               target_ref: 'pull_request:18',
-              draft_body: 'Please fix go test before review.',
+              draft_body: '请先修复 go test，再请求 Review。',
               evidence_refs: ['event_check-run-123'],
             },
           ],
@@ -102,7 +100,7 @@ describe('Dev Time risk workspace', () => {
           action_type: 'pr_comment',
           status: 'succeeded',
           target_ref: 'pull_request:18',
-          draft_body: 'Please fix go test before review.',
+          draft_body: '请先修复 go test，再请求 Review。',
           evidence_refs: ['event_check-run-123'],
         })
       }
@@ -113,13 +111,13 @@ describe('Dev Time risk workspace', () => {
     render(<App />)
 
     expect(
-      await screen.findByText(/please fix go test before review/i),
+      await screen.findByText(/请先修复 go test，再请求 Review/i),
     ).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /confirm action/i }))
+    fireEvent.click(screen.getByRole('button', { name: /确认执行/i }))
 
     await waitFor(() => {
-      expect(screen.getByText(/status: succeeded/i)).toBeInTheDocument()
+      expect(screen.getByText(/状态：已执行/i)).toBeInTheDocument()
     })
   })
 })

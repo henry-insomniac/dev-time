@@ -25,7 +25,7 @@ const projects: RiskProject[] = [
     name: 'dev-time-agent',
     level: 'high',
     score: 70,
-    reason: 'test failed and is blocking progress.',
+    reason: '测试失败，正在阻塞交付进度。',
     evidence: 'check_run event_check-run-1',
   },
   {
@@ -33,8 +33,8 @@ const projects: RiskProject[] = [
     name: 'dev-time',
     level: 'stable',
     score: 0,
-    reason: 'No active risk signals were found.',
-    evidence: 'Latest sync completed cleanly',
+    reason: '暂无活跃风险信号。',
+    evidence: '最近一次同步正常完成',
   },
 ]
 
@@ -94,15 +94,15 @@ export function App() {
 
   return (
     <main className="workspace" aria-labelledby="workspace-title">
-      <section className="risk-queue" aria-label="Risk queue">
+      <section className="risk-queue" aria-label="风险队列">
         <div className="section-title">
           <ShieldAlert aria-hidden="true" size={18} />
-          <h1 id="workspace-title">Risk queue</h1>
+          <h1 id="workspace-title">风险队列</h1>
         </div>
         <div className="queue-list">
           {riskProjects.map((project) => (
             <button
-              aria-label={`${project.name} ${project.level}`}
+              aria-label={`${project.name} ${formatRiskLevel(project.level)}`}
               className={
                 project.id === selectedProject.id
                   ? 'queue-item queue-item-selected'
@@ -113,45 +113,45 @@ export function App() {
               type="button"
             >
               <span>{project.name}</span>
-              <strong>{project.level}</strong>
+              <strong>{formatRiskLevel(project.level)}</strong>
             </button>
           ))}
         </div>
       </section>
 
-      <section className="risk-detail" aria-label="Selected risk">
+      <section className="risk-detail" aria-label="当前风险">
         <div className="detail-header">
           <GitPullRequest aria-hidden="true" size={20} />
           <div>
             <h2>{selectedProject.name}</h2>
-            <p>Risk score {selectedProject.score}</p>
+            <p>风险分 {selectedProject.score}</p>
           </div>
         </div>
 
         <article className="evidence-panel">
-          <h3>EvidenceBundle</h3>
+          <h3>证据包</h3>
           <p>{selectedProject.reason}</p>
           <small>{selectedProject.evidence}</small>
         </article>
       </section>
 
-      <aside className="agent-dock" aria-label="Agent dock">
+      <aside className="agent-dock" aria-label="Agent 助手">
         <div className="agent-header">
           <Bot aria-hidden="true" size={20} />
           <div>
-            <h2>Agent Dock</h2>
-            <p>Agent context: {selectedProject.name}</p>
+            <h2>Agent 助手</h2>
+            <p>当前项目：{selectedProject.name}</p>
           </div>
         </div>
         <div className="agent-messages">
           <p>{selectedProject.reason}</p>
-          <div className="action-suggestions" aria-label="Action suggestions">
+          <div className="action-suggestions" aria-label="行动建议">
             {actionSuggestions.map((suggestion) => (
               <article className="action-suggestion" key={suggestion.id}>
                 <div className="action-suggestion-header">
                   <CheckCircle2 aria-hidden="true" size={18} />
-                  <strong>{suggestion.action_type}</strong>
-                  <span>Status: {suggestion.status}</span>
+                  <strong>{formatActionType(suggestion.action_type)}</strong>
+                  <span>状态：{formatActionStatus(suggestion.status)}</span>
                 </div>
                 <p>{suggestion.draft_body}</p>
                 <small>{suggestion.target_ref}</small>
@@ -160,7 +160,7 @@ export function App() {
                     onClick={() => handleConfirmAction(suggestion.id)}
                     type="button"
                   >
-                    Confirm action
+                    确认执行
                   </button>
                 ) : null}
               </article>
@@ -168,8 +168,8 @@ export function App() {
           </div>
         </div>
         <form className="agent-input" onSubmit={(event) => event.preventDefault()}>
-          <label htmlFor="agent-message">Ask Agent</label>
-          <input id="agent-message" placeholder="Ask about this risk" />
+          <label htmlFor="agent-message">询问 Agent</label>
+          <input id="agent-message" placeholder="询问这个风险" />
         </form>
       </aside>
     </main>
@@ -209,7 +209,35 @@ function mapProjectSummary(project: ProjectSummary): RiskProject {
     name: project.name,
     level: project.risk_level,
     score: project.risk_score,
-    reason: `Current project risk level is ${project.risk_level}.`,
-    evidence: 'Loaded from /api/projects',
+    reason: `当前项目风险等级为${formatRiskLevel(project.risk_level)}。`,
+    evidence: '来自 /api/projects',
   }
+}
+
+function formatRiskLevel(level: ProjectSummary['risk_level']): string {
+  const labels: Record<ProjectSummary['risk_level'], string> = {
+    stable: '稳定',
+    low: '低',
+    medium: '中',
+    high: '高',
+  }
+  return labels[level]
+}
+
+function formatActionType(actionType: string): string {
+  const labels: Record<string, string> = {
+    pr_comment: 'PR 评论',
+    issue_comment: 'Issue 评论',
+  }
+  return labels[actionType] ?? actionType
+}
+
+function formatActionStatus(status: ActionSuggestion['status']): string {
+  const labels: Record<ActionSuggestion['status'], string> = {
+    drafted: '草稿',
+    pending_user_confirmation: '待确认',
+    succeeded: '已执行',
+    failed: '失败',
+  }
+  return labels[status]
 }
