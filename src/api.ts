@@ -79,6 +79,19 @@ export type AgentConversationTurn = {
   user_message: string
   agent_response: string
   evidence_refs: string[]
+  intent: string
+  trace_events: AgentTraceEvent[]
+}
+
+export type AgentTraceEvent = {
+  id: string
+  conversation_id: string
+  turn_id: string
+  event_type: string
+  title: string
+  body: string
+  intent: string
+  evidence_refs: string[]
 }
 
 export type LLMProviderConfig = {

@@ -295,7 +295,10 @@ export function App() {
                   </div>
                   <div className="message-row message-row-agent">
                     <div className="message-bubble message-bubble-agent">
-                      <strong>Agent</strong>
+                      <div className="message-agent-meta">
+                        <strong>Agent</strong>
+                        <span>意图：{formatAgentIntent(turn.intent)}</span>
+                      </div>
                       <p>{turn.agent_response}</p>
                     </div>
                   </div>
@@ -303,6 +306,13 @@ export function App() {
                     <div className="evidence-chips" aria-label="回复证据">
                       {turn.evidence_refs.map((evidenceRef) => (
                         <span key={evidenceRef}>{evidenceRef}</span>
+                      ))}
+                    </div>
+                  ) : null}
+                  {turn.trace_events.length > 0 ? (
+                    <div className="trace-list" aria-label="Agent Trace">
+                      {turn.trace_events.map((traceEvent) => (
+                        <p key={traceEvent.id}>Trace：{traceEvent.title}</p>
                       ))}
                     </div>
                   ) : null}
@@ -560,6 +570,15 @@ function formatAgentRunStatus(status: string): string {
     failed: '失败',
   }
   return labels[status] ?? status
+}
+
+function formatAgentIntent(intent: string): string {
+  const labels: Record<string, string> = {
+    smalltalk: '普通对话',
+    risk_explain: '风险解释',
+    action_plan: '行动计划',
+  }
+  return labels[intent] ?? intent
 }
 
 function formatProviderLabel(provider: LLMProviderConfig['provider']): string {

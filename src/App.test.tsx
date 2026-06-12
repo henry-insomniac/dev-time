@@ -275,6 +275,19 @@ describe('Dev Time risk workspace', () => {
           user_message: '为什么是高风险？',
           agent_response: '因为 go test 持续失败并阻塞交付。',
           evidence_refs: ['event_check-run-123'],
+          intent: 'risk_explain',
+          trace_events: [
+            {
+              id: 'trace_turn_123',
+              conversation_id: 'conversation_project_server',
+              turn_id: 'turn_123',
+              event_type: 'intent_routed',
+              title: '完成意图识别',
+              body: 'Agent 已根据用户输入选择处理路径。',
+              intent: 'risk_explain',
+              evidence_refs: ['event_check-run-123'],
+            },
+          ],
         })
       }
       return jsonResponse({})
@@ -296,6 +309,8 @@ describe('Dev Time risk workspace', () => {
       within(screen.getByLabelText(/Agent 对话记录/i)).getByText('Agent'),
     ).toBeInTheDocument()
     expect(screen.getByText('event_check-run-123')).toBeInTheDocument()
+    expect(screen.getByText(/意图：风险解释/i)).toBeInTheDocument()
+    expect(screen.getByText(/Trace：完成意图识别/i)).toBeInTheDocument()
     expect(
       screen
         .getByLabelText(/行动建议/i)

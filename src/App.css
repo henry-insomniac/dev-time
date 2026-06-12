@@ -358,6 +358,22 @@ body,
   font-size: 13px;
 }
 
+.message-agent-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.message-agent-meta span {
+  border: 2px solid #172033;
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 12px;
+  line-height: 1.4;
+  background: #f4f7e3;
+}
+
 .conversation-turn small {
   overflow-wrap: anywhere;
 }
@@ -379,6 +395,18 @@ body,
   font-size: 12px;
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.trace-list {
+  display: grid;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.trace-list p {
+  margin: 0;
+  font-size: 12px;
+  color: #465066;
 }
 
 .action-suggestion {
