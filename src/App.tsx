@@ -577,6 +577,7 @@ function formatAgentIntent(intent: string): string {
     smalltalk: '普通对话',
     self_intro: '自我介绍',
     clarify: '需要澄清',
+    project_status: '项目状态',
     risk_explain: '风险解释',
     action_plan: '行动计划',
   }
