@@ -575,6 +575,7 @@ function formatAgentRunStatus(status: string): string {
 function formatAgentIntent(intent: string): string {
   const labels: Record<string, string> = {
     smalltalk: '普通对话',
+    self_intro: '自我介绍',
     risk_explain: '风险解释',
     action_plan: '行动计划',
   }
