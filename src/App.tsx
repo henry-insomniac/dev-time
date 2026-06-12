@@ -302,16 +302,16 @@ export function App() {
                       <p>{turn.agent_response}</p>
                     </div>
                   </div>
-                  {turn.evidence_refs.length > 0 ? (
+                  {(turn.evidence_refs ?? []).length > 0 ? (
                     <div className="evidence-chips" aria-label="回复证据">
-                      {turn.evidence_refs.map((evidenceRef) => (
+                      {(turn.evidence_refs ?? []).map((evidenceRef) => (
                         <span key={evidenceRef}>{evidenceRef}</span>
                       ))}
                     </div>
                   ) : null}
-                  {turn.trace_events.length > 0 ? (
+                  {(turn.trace_events ?? []).length > 0 ? (
                     <div className="trace-list" aria-label="Agent Trace">
-                      {turn.trace_events.map((traceEvent) => (
+                      {(turn.trace_events ?? []).map((traceEvent) => (
                         <p key={traceEvent.id}>Trace：{traceEvent.title}</p>
                       ))}
                     </div>
@@ -576,6 +576,7 @@ function formatAgentIntent(intent: string): string {
   const labels: Record<string, string> = {
     smalltalk: '普通对话',
     self_intro: '自我介绍',
+    clarify: '需要澄清',
     risk_explain: '风险解释',
     action_plan: '行动计划',
   }

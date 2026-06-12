@@ -318,6 +318,92 @@ describe('Dev Time risk workspace', () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
   })
+
+  it('展示 Agent 澄清意图', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/api/projects')) {
+        return jsonResponse({
+          projects: [
+            {
+              id: 'project_server',
+              name: 'dev-time-server',
+              risk_score: 82,
+              risk_level: 'high',
+            },
+          ],
+        })
+      }
+      if (url.endsWith('/api/projects/project_server/action-suggestions')) {
+        return jsonResponse({ action_suggestions: [] })
+      }
+      if (url.endsWith('/api/projects/project_server/agent-runs')) {
+        return jsonResponse({ agent_runs: [] })
+      }
+      if (url.endsWith('/api/projects/project_server/risk')) {
+        return jsonResponse({
+          assessment: {
+            id: 'risk_123',
+            project_id: 'project_server',
+            score: 82,
+            level: 'high',
+            trend: 'up',
+          },
+          signals: [],
+        })
+      }
+      if (
+        url.endsWith(
+          '/api/projects/project_server/agent-conversation?risk_assessment_id=risk_123',
+        )
+      ) {
+        return jsonResponse({
+          id: 'conversation_project_server',
+          project_id: 'project_server',
+          latest_risk_assessment_id: 'risk_123',
+          status: 'active',
+        })
+      }
+      if (
+        url.endsWith('/api/agent-conversations/conversation_project_server/turns') &&
+        init?.method === 'POST'
+      ) {
+        return jsonResponse({
+          id: 'turn_123',
+          conversation_id: 'conversation_project_server',
+          user_message: '你怎么看',
+          agent_response: '你想让我评估当前风险、解释证据，还是生成下一步行动计划？',
+          evidence_refs: null,
+          intent: 'clarify',
+          trace_events: [
+            {
+              id: 'trace_turn_123',
+              conversation_id: 'conversation_project_server',
+              turn_id: 'turn_123',
+              event_type: 'intent_routed',
+              title: '完成意图识别',
+              body: 'Agent 已根据用户输入选择处理路径。',
+              intent: 'clarify',
+              evidence_refs: [],
+            },
+          ],
+        })
+      }
+      return jsonResponse({})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+
+    await screen.findByText(/当前项目：dev-time-server/i)
+    fireEvent.change(screen.getByLabelText(/询问 Agent/i), {
+      target: { value: '你怎么看' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /发送/i }))
+
+    expect(await screen.findByText(/意图：需要澄清/i)).toBeInTheDocument()
+    expect(screen.getByText(/你想让我评估当前风险/i)).toBeInTheDocument()
+  })
 })
 
 function jsonResponse(body: unknown): Response {
