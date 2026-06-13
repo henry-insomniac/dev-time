@@ -1,4 +1,9 @@
-import { Bot, CheckCircle2, GitPullRequest, ShieldAlert } from 'lucide-react'
+import {
+  Bot,
+  CheckCircle2,
+  GitPullRequest,
+  ShieldAlert,
+} from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 
 import {
@@ -17,6 +22,7 @@ import {
   type LLMProviderConfig,
   type ProjectSummary,
 } from './api'
+import { AgentConversationList } from './AgentConversationList'
 import './App.css'
 
 type RiskProject = {
@@ -284,42 +290,7 @@ export function App() {
               </article>
             ))}
           </div>
-          {agentConversationTurns.length > 0 ? (
-            <div className="conversation-turns" aria-label="Agent 对话记录">
-              {agentConversationTurns.map((turn) => (
-                <article className="conversation-turn" key={turn.id}>
-                  <div className="message-row message-row-user">
-                    <p className="message-bubble message-bubble-user">
-                      {turn.user_message}
-                    </p>
-                  </div>
-                  <div className="message-row message-row-agent">
-                    <div className="message-bubble message-bubble-agent">
-                      <div className="message-agent-meta">
-                        <strong>Agent</strong>
-                        <span>意图：{formatAgentIntent(turn.intent)}</span>
-                      </div>
-                      <p>{turn.agent_response}</p>
-                    </div>
-                  </div>
-                  {(turn.evidence_refs ?? []).length > 0 ? (
-                    <div className="evidence-chips" aria-label="回复证据">
-                      {(turn.evidence_refs ?? []).map((evidenceRef) => (
-                        <span key={evidenceRef}>{evidenceRef}</span>
-                      ))}
-                    </div>
-                  ) : null}
-                  {(turn.trace_events ?? []).length > 0 ? (
-                    <div className="trace-list" aria-label="Agent Trace">
-                      {(turn.trace_events ?? []).map((traceEvent) => (
-                        <p key={traceEvent.id}>Trace：{traceEvent.title}</p>
-                      ))}
-                    </div>
-                  ) : null}
-                </article>
-              ))}
-            </div>
-          ) : null}
+          <AgentConversationList turns={agentConversationTurns} />
         </div>
         <form className="agent-input" onSubmit={handleSendAgentMessage}>
           <label htmlFor="agent-message">询问 Agent</label>
@@ -366,6 +337,7 @@ export function App() {
         )
       })
   }
+
 
   function handleSelectProject(projectID: string) {
     setCurrentView('workspace')
@@ -570,18 +542,6 @@ function formatAgentRunStatus(status: string): string {
     failed: '失败',
   }
   return labels[status] ?? status
-}
-
-function formatAgentIntent(intent: string): string {
-  const labels: Record<string, string> = {
-    smalltalk: '普通对话',
-    self_intro: '自我介绍',
-    clarify: '需要澄清',
-    project_status: '项目状态',
-    risk_explain: '风险解释',
-    action_plan: '行动计划',
-  }
-  return labels[intent] ?? intent
 }
 
 function formatProviderLabel(provider: LLMProviderConfig['provider']): string {
