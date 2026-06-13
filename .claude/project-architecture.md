@@ -104,6 +104,7 @@ Agent 对话消息按 turn 展示：
 - 用户消息在上，Agent 回复在下，最新消息位于底部。
 - `reasoning_trace` 默认显示“思考过程 · N 步”入口，但默认折叠。
 - 用户点击后展开当前 turn 的上下文、规划、工具、生成和审核摘要。
+- `tool_calls` 会以工具调用摘要展示；`approval_request` 会展示“待确认行动”，并在发送后刷新中栏 ActionSuggestion 列表。
 - 如果 `reasoning_trace` 存在，前端不再重复显示旧 `Trace：...` 文本。
 - 展开内容不得展示模型原始 chain-of-thought、prompt、密钥或完整私有上下文。
 

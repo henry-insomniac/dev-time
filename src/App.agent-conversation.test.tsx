@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { App } from './App'
@@ -143,6 +143,127 @@ describe('Dev Time Agent conversation', () => {
         .compareDocumentPosition(screen.getByLabelText(/Agent 对话记录/i)) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
+  })
+
+  it('Agent 生成待确认行动草稿后刷新行动建议', async () => {
+    let actionSuggestionLoads = 0
+    const draftBody = 'go test 失败阻塞交付，请先修复后再继续合并。'
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith('/api/projects')) {
+        return jsonResponse({
+          projects: [
+            {
+              id: 'project_server',
+              name: 'dev-time-server',
+              risk_score: 82,
+              risk_level: 'high',
+            },
+          ],
+        })
+      }
+      if (url.endsWith('/api/projects/project_server/action-suggestions')) {
+        actionSuggestionLoads += 1
+        return jsonResponse({
+          action_suggestions:
+            actionSuggestionLoads === 1
+              ? []
+              : [
+                  {
+                    id: 'action_tool_123',
+                    project_id: 'project_server',
+                    action_type: 'pr_comment',
+                    status: 'pending_user_confirmation',
+                    target_ref: 'pull_request:18',
+                    draft_body: draftBody,
+                    evidence_refs: ['event_check-run-123'],
+                  },
+                ],
+        })
+      }
+      if (url.endsWith('/api/projects/project_server/agent-runs')) {
+        return jsonResponse({ agent_runs: [] })
+      }
+      if (url.endsWith('/api/projects/project_server/risk')) {
+        return jsonResponse({
+          assessment: {
+            id: 'risk_123',
+            project_id: 'project_server',
+            score: 82,
+            level: 'high',
+            trend: 'up',
+          },
+          signals: [],
+        })
+      }
+      if (
+        url.endsWith(
+          '/api/projects/project_server/agent-conversation?risk_assessment_id=risk_123',
+        )
+      ) {
+        return jsonResponse({
+          id: 'conversation_project_server',
+          project_id: 'project_server',
+          latest_risk_assessment_id: 'risk_123',
+          status: 'active',
+        })
+      }
+      if (
+        url.endsWith('/api/agent-conversations/conversation_project_server/turns') &&
+        init?.method === 'POST'
+      ) {
+        return jsonResponse({
+          id: 'turn_approval_123',
+          conversation_id: 'conversation_project_server',
+          user_message: '生成 PR 评论草稿',
+          agent_response: '已生成 PR 评论草稿，请确认后发布。',
+          evidence_refs: ['event_check-run-123'],
+          intent: 'draft_pr_comment',
+          trace_events: [],
+          reasoning_trace: [],
+          tool_calls: [
+            {
+              name: 'action_suggestion.create',
+              status: 'succeeded',
+              evidence_refs: ['event_check-run-123'],
+            },
+          ],
+          approval_request: {
+            status: 'pending',
+            reason: 'LLM 生成了需要用户确认的写操作。',
+            actions: [
+              {
+                action_suggestion_id: 'action_tool_123',
+                action_type: 'pr_comment',
+                target_ref: 'pull_request:18',
+                draft_body: draftBody,
+                evidence_refs: ['event_check-run-123'],
+                required_permission: 'pull_request:write',
+              },
+            ],
+          },
+        })
+      }
+      return jsonResponse({})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+
+    await screen.findByText(/当前项目：dev-time-server/i)
+    fireEvent.change(screen.getByLabelText(/询问 Agent/i), {
+      target: { value: '生成 PR 评论草稿' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /发送/i }))
+
+    expect(await screen.findByText(/已生成 PR 评论草稿/i)).toBeInTheDocument()
+    expect(screen.getByText(/待确认行动/i)).toBeInTheDocument()
+    expect(screen.getByText(/action_suggestion.create/i)).toBeInTheDocument()
+    await waitFor(() => {
+      expect(actionSuggestionLoads).toBeGreaterThanOrEqual(2)
+    })
+    expect(screen.getAllByText(draftBody).length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByRole('button', { name: /确认执行/i })).toBeInTheDocument()
   })
 })
 

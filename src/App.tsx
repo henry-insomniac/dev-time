@@ -387,6 +387,11 @@ export function App() {
       .then((turn) => {
         setAgentConversationTurns((currentTurns) => [...currentTurns, turn])
         setAgentMessage('')
+        if (turn.approval_request) {
+          return fetchActionSuggestions(selectedProject.id).then((loadedSuggestions) => {
+            setActionSuggestions(loadedSuggestions)
+          })
+        }
       })
       .catch((error: unknown) => {
         setAgentMessageError(

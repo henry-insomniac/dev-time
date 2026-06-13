@@ -117,6 +117,7 @@ export type AgentApprovalRequest = {
   status: string
   reason: string
   actions: Array<{
+    action_suggestion_id?: string
     action_type: string
     target_ref: string
     draft_body: string

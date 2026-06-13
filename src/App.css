@@ -409,6 +409,51 @@ body,
   color: #465066;
 }
 
+.tool-call-summary,
+.approval-summary {
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 10px;
+}
+
+.tool-call-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tool-call-summary span {
+  border: 1px solid #172033;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.approval-summary {
+  display: grid;
+  gap: 8px;
+}
+
+.approval-summary p,
+.approval-action p {
+  margin: 0;
+}
+
+.approval-action {
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid rgba(23, 32, 51, 0.22);
+  padding-top: 8px;
+}
+
+.approval-action span {
+  font-size: 13px;
+  font-weight: 900;
+}
+
 .reasoning-panel {
   display: grid;
   gap: 8px;

@@ -37,6 +37,31 @@ export function AgentConversationList({ turns }: AgentConversationListProps) {
               ))}
             </div>
           ) : null}
+          {(turn.tool_calls ?? []).length > 0 ? (
+            <div className="tool-call-summary" aria-label="工具调用">
+              {(turn.tool_calls ?? []).map((toolCall) => (
+                <span key={`${turn.id}-${toolCall.name}`}>
+                  {toolCall.name} · {formatToolStatus(toolCall.status)}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {turn.approval_request ? (
+            <div className="approval-summary" aria-label="待确认行动">
+              <strong>待确认行动</strong>
+              <p>{turn.approval_request.reason}</p>
+              {turn.approval_request.actions.map((action) => (
+                <div
+                  className="approval-action"
+                  key={action.action_suggestion_id ?? action.target_ref}
+                >
+                  <span>{action.target_ref}</span>
+                  <p>{action.draft_body}</p>
+                  <small>权限：{action.required_permission}</small>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {(turn.reasoning_trace ?? []).length === 0 &&
           (turn.trace_events ?? []).length > 0 ? (
             <div className="trace-list" aria-label="Agent Trace">
