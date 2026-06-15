@@ -66,6 +66,23 @@ export type ProjectRisk = {
   }>
 }
 
+export type EvidenceEvent = {
+  id: string
+  event_type: string
+  github_object_type: string
+  github_object_id: string
+  normalized_summary: string
+  payload: unknown
+}
+
+export type EvidenceBundle = {
+  project: ProjectSummary
+  assessment: ProjectRisk['assessment']
+  signals: ProjectRisk['signals']
+  events: EvidenceEvent[]
+  allowed_actions: string[]
+}
+
 export type AgentConversation = {
   id: string
   project_id: string
@@ -80,6 +97,9 @@ export type AgentConversationTurn = {
   agent_response: string
   evidence_refs: string[]
   intent: string
+  domain: string
+  entities: Record<string, unknown>
+  capabilities: string[]
   trace_events: AgentTraceEvent[]
   reasoning_trace: ReasoningTraceStep[]
   tool_calls: AgentToolCall[]
@@ -145,4 +165,43 @@ export type SaveLLMProviderInput = {
   base_url: string
   model: string
   api_key: string
+}
+
+export type GitHubRepositoryAccess = {
+  id: string
+  github_id: number
+  owner: string
+  name: string
+  full_name: string
+  project_id: string | null
+  analysis_enabled: boolean
+  sync_status: string
+  last_synced_at: string | null
+  sync_failure_reason: string | null
+}
+
+export type GitHubSettings = {
+  connected: boolean
+  provider: 'github_app'
+  repositories: GitHubRepositoryAccess[]
+  permissions: string[]
+  storage_status?: 'ready' | 'unavailable'
+  installation_configured?: boolean
+}
+
+export type GitHubRepositoryAnalysisResponse = {
+  repository: GitHubRepositoryAccess
+}
+
+export type GitHubRepositorySyncResponse = {
+  repository: GitHubRepositoryAccess
+}
+
+export type GitHubRepositoryLoadProjectResponse = {
+  project: {
+    id: string
+    repository_id: string
+    name: string
+  }
+  repository: GitHubRepositoryAccess
 }

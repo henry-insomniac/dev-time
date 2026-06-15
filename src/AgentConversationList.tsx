@@ -26,6 +26,15 @@ export function AgentConversationList({ turns }: AgentConversationListProps) {
               <div className="message-agent-meta">
                 <strong>Agent</strong>
                 <span>意图：{formatAgentIntent(turn.intent)}</span>
+                {turn.domain ? (
+                  <span>领域：{formatAgentDomain(turn.domain)}</span>
+                ) : null}
+                {(turn.capabilities ?? []).length > 0 ? (
+                  <span>
+                    能力：
+                    {(turn.capabilities ?? []).map(formatAgentCapability).join('、')}
+                  </span>
+                ) : null}
               </div>
               <p>{turn.agent_response}</p>
             </div>
@@ -145,8 +154,33 @@ function formatAgentIntent(intent: string): string {
     project_status: '项目状态',
     risk_explain: '风险解释',
     action_plan: '行动计划',
+    github_auth_status: 'GitHub 授权状态',
+    github_repository_list: 'GitHub 项目列表',
+    github_repository_detail: 'GitHub 项目详情',
+    github_pull_requests_list: 'GitHub PR 列表',
+    github_issues_list: 'GitHub Issue 列表',
+    github_checks_list: 'GitHub CI 列表',
   }
   return labels[intent] ?? intent
+}
+
+function formatAgentDomain(domain: string): string {
+  const labels: Record<string, string> = {
+    github: 'GitHub',
+  }
+  return labels[domain] ?? domain
+}
+
+function formatAgentCapability(capability: string): string {
+  const labels: Record<string, string> = {
+    'github.auth.status': 'GitHub 授权状态',
+    'github.repos.list': 'GitHub 项目列表',
+    'github.repo.detail': 'GitHub 项目详情',
+    'github.pull_requests.list': 'GitHub PR 列表',
+    'github.issues.list': 'GitHub Issue 列表',
+    'github.checks.list': 'GitHub CI 列表',
+  }
+  return labels[capability] ?? capability
 }
 
 function formatReasoningStage(stage: string): string {

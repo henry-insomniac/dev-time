@@ -97,7 +97,7 @@ Dev Time 跨端技术架构。定义 GitHub 事实源、事件流、风险引擎
 
 ### `src/`
 
-React 前端源码目录。当前包含三栏 Risk Workspace shell、`/api/projects` 前端 client、AgentRun / AgentStep 调查时间线 client、ActionSuggestion 列表/确认 client、Agent 对话 reasoning trace 折叠展示、交互测试和基础样式。Risk queue 优先加载 server 项目风险队列，Agent Dock 会读取当前项目 Agent 调查过程和行动草稿并支持确认；后续按 `features/` 和 `shared/` 扩展。
+React 前端源码目录。当前包含三栏 Risk Workspace shell、`/api/projects` 前端 client、GitHub 设置状态 client、EvidenceBundle client、AgentRun / AgentStep 调查时间线 client、ActionSuggestion 列表/确认 client、Agent 对话 reasoning trace 折叠展示、交互测试和基础样式。Risk queue 优先加载 server 项目风险队列，中栏会读取 `GET /api/projects/{projectID}/risk` 和 `GET /api/risk-assessments/{assessmentID}/evidence-bundle` 展示风险理由、证据引用和 GitHub 事件标准化摘要；GitHub 设置视图读取 `GET /api/settings/github` 展示连接状态、权限和全部授权仓库，并提供浏览器链接 `GET /api/github/installations/start` 触发 GitHub App 安装/授权；未加载仓库显示“加载到 Dev Time”，加载成功后刷新 `/api/projects` 让仓库进入左侧风险队列；已加载仓库展示同步状态和“纳入 Dev Time 分析”开关，并通过 `PATCH /api/settings/github/repositories/{repositoryID}/analysis` 保存仓库分析选择，通过 `POST /api/settings/github/repositories/{repositoryID}/sync` 触发仓库同步；Agent Dock 会读取当前项目 Agent 调查过程和行动草稿并支持确认；后续按 `features/` 和 `shared/` 扩展。
 
 Agent 对话消息按 turn 展示：
 
@@ -139,3 +139,9 @@ Agent 对话消息按 turn 展示：
 | 2026-06-11 | 接入 ActionSuggestion 展示和确认 | Agent Dock 可展示当前项目行动草稿并调用 confirm API 更新状态 | `pnpm lint && pnpm test && pnpm build` |
 | 2026-06-11 | 接入 AgentRun 调查时间线 | Agent Dock 可展示 Agent 风险判断过程、步骤和证据引用 | `pnpm lint && pnpm test && pnpm build` |
 | 2026-06-13 | 增加 Agent 对话思考过程折叠展示 | 用户需要默认折叠、手动展开查看每轮 Agent 可审计过程 | `pnpm lint && pnpm build && pnpm test -- --runInBand` |
+| 2026-06-13 | 增加 GitHub 设置状态视图 | 用户需要看到当前 GitHub 是否已连接以及 Agent 可读取哪些仓库 | `pnpm test -- --runInBand src/App.test.tsx -t '展示 GitHub 连接状态和授权仓库'` |
+| 2026-06-15 | GitHub 设置页增加仓库分析开关和同步状态 | 产品研发主线进入 GitHub 仓库选择闭环，用户需要决定哪些授权仓库进入风险分析 | `corepack pnpm test -- --run && corepack pnpm build` |
+| 2026-06-15 | 当前风险详情接入公开 EvidenceBundle | 用户需要从风险信号追溯到标准化 GitHub 事件摘要，形成可解释证据链 | `corepack pnpm test -- --run && corepack pnpm build` |
+| 2026-06-15 | 仓库分析开关保存后刷新风险队列 | 用户关闭仓库分析后，工作台不应继续展示已排除项目 | `corepack pnpm test -- --run && corepack pnpm build` |
+| 2026-06-15 | GitHub 设置支持加载授权仓库为项目 | 用户连接 GitHub 后可以看到授权仓库目录，并把任意仓库加载进 Dev Time 工作台 | `corepack pnpm test -- --run && corepack pnpm build` |
+| 2026-06-15 | GitHub 设置增加浏览器授权入口 | 用户需要从 Dev Time 页面跳转 GitHub App 安装页选择授权仓库 | `npm test -- --run src/App.test.tsx -t 'GitHub 设置'` |

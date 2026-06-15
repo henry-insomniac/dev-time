@@ -10,16 +10,26 @@ import {
   confirmActionSuggestion,
   fetchAgentRuns,
   fetchActionSuggestions,
+  fetchEvidenceBundle,
   fetchLLMProviders,
+  fetchGitHubSettings,
   fetchAgentConversation,
   fetchProjects,
   fetchProjectRisk,
+  githubInstallationStartURL,
+  loadGitHubRepositoryProject,
   saveLLMProvider,
   sendAgentConversationTurn,
+  triggerGitHubRepositorySync,
+  updateGitHubRepositoryAnalysis,
   type AgentRun,
   type AgentConversationTurn,
   type ActionSuggestion,
+  type EvidenceBundle,
+  type GitHubSettings,
+  type GitHubRepositoryAccess,
   type LLMProviderConfig,
+  type ProjectRisk,
   type ProjectSummary,
 } from './api'
 import { AgentConversationList } from './AgentConversationList'
@@ -58,17 +68,21 @@ export function App() {
   const [selectedProjectID, setSelectedProjectID] = useState(projects[0].id)
   const [actionSuggestions, setActionSuggestions] = useState<ActionSuggestion[]>([])
   const [agentRuns, setAgentRuns] = useState<AgentRun[]>([])
+  const [selectedProjectRisk, setSelectedProjectRisk] = useState<ProjectRisk | null>(null)
+  const [selectedEvidenceBundle, setSelectedEvidenceBundle] =
+    useState<EvidenceBundle | null>(null)
   const [llmProviders, setLLMProviders] = useState<LLMProviderConfig[]>([])
   const [llmAPIKeys, setLLMAPIKeys] = useState<Record<string, string>>({})
+  const [githubSettings, setGitHubSettings] = useState<GitHubSettings | null>(null)
   const [agentMessage, setAgentMessage] = useState('')
   const [agentConversationTurns, setAgentConversationTurns] = useState<
     AgentConversationTurn[]
   >([])
   const [isSendingAgentMessage, setIsSendingAgentMessage] = useState(false)
   const [agentMessageError, setAgentMessageError] = useState('')
-  const [currentView, setCurrentView] = useState<'workspace' | 'llm-settings'>(
-    'workspace',
-  )
+  const [currentView, setCurrentView] = useState<
+    'workspace' | 'llm-settings' | 'github-settings'
+  >('workspace')
   const [apiError, setAPIError] = useState('')
   const agentMessagesRef = useRef<HTMLDivElement>(null)
 
@@ -83,6 +97,8 @@ export function App() {
         const mappedProjects = loadedProjects.map(mapProjectSummary)
         setRiskProjects(mappedProjects)
         setSelectedProjectID(mappedProjects[0].id)
+        setSelectedProjectRisk(null)
+        setSelectedEvidenceBundle(null)
         setActionSuggestions([])
         setAgentRuns([])
         setAgentConversationTurns([])
@@ -102,6 +118,35 @@ export function App() {
       ignore = true
     }
   }, [])
+
+  useEffect(() => {
+    let ignore = false
+    setSelectedEvidenceBundle(null)
+
+    fetchProjectRisk(selectedProjectID)
+      .then((projectRisk) => {
+        if (ignore) {
+          return null
+        }
+        setSelectedProjectRisk(projectRisk)
+        return fetchEvidenceBundle(projectRisk.assessment.id)
+      })
+      .then((evidenceBundle) => {
+        if (!ignore && evidenceBundle) {
+          setSelectedEvidenceBundle(evidenceBundle)
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setSelectedProjectRisk(null)
+          setSelectedEvidenceBundle(null)
+        }
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [selectedProjectID])
 
   useEffect(() => {
     let ignore = false
@@ -142,6 +187,10 @@ export function App() {
       riskProjects[0],
     [riskProjects, selectedProjectID],
   )
+  const selectedRiskSignal = selectedProjectRisk?.signals?.[0] ?? null
+  const selectedRiskReason = selectedRiskSignal?.reason ?? selectedProject.reason
+  const selectedEvidenceRefs = selectedRiskSignal?.evidence_refs ?? []
+  const selectedEvidenceEvents = selectedEvidenceBundle?.events ?? []
 
   return (
     <main className="workspace" aria-labelledby="workspace-title">
@@ -156,6 +205,13 @@ export function App() {
           type="button"
         >
           LLM 设置
+        </button>
+        <button
+          className="settings-button"
+          onClick={() => openGitHubSettings()}
+          type="button"
+        >
+          GitHub 设置
         </button>
         <div className="queue-list">
           {apiError ? <p className="api-error">{apiError}</p> : null}
@@ -212,6 +268,32 @@ export function App() {
             ))}
           </div>
         </section>
+      ) : currentView === 'github-settings' ? (
+        <section className="risk-detail" aria-label="GitHub 设置">
+          <div className="detail-header">
+            <GitPullRequest aria-hidden="true" size={20} />
+            <div>
+              <h2>GitHub 设置</h2>
+              <p>Agent 可读取的 GitHub 授权范围</p>
+            </div>
+          </div>
+          {githubSettings ? (
+              <GitHubSettingsPanel
+                installationStartURL={githubInstallationStartURL()}
+                onRepositoryAnalysisChange={handleRepositoryAnalysisChange}
+                onRepositoryLoadProject={handleRepositoryLoadProject}
+                onRepositorySync={handleRepositorySync}
+                settings={githubSettings}
+              />
+          ) : (
+            <article className="llm-provider-card">
+              <div className="llm-provider-header">
+                <h3>GitHub</h3>
+                <strong className="status-empty">加载中</strong>
+              </div>
+            </article>
+          )}
+        </section>
       ) : (
         <section className="risk-detail" aria-label="当前风险">
           <div className="detail-header">
@@ -224,8 +306,31 @@ export function App() {
 
           <article className="evidence-panel">
             <h3>证据包</h3>
-            <p>{selectedProject.reason}</p>
-            <small>{selectedProject.evidence}</small>
+            <p>{selectedRiskReason}</p>
+            {selectedEvidenceRefs.length > 0 ? (
+              <div className="evidence-chips" aria-label="当前风险证据">
+                {selectedEvidenceRefs.map((evidenceRef) => (
+                  <span key={evidenceRef}>{evidenceRef}</span>
+                ))}
+              </div>
+            ) : (
+              <small>{selectedProject.evidence}</small>
+            )}
+            {selectedEvidenceEvents.length > 0 ? (
+              <div className="evidence-events" aria-label="证据事件">
+                {selectedEvidenceEvents.map((event) => (
+                  <article className="evidence-event" key={event.id}>
+                    <strong>
+                      {event.normalized_summary ||
+                        formatEvidenceEventType(event.event_type)}
+                    </strong>
+                    <small>
+                      {event.github_object_type} {event.github_object_id}
+                    </small>
+                  </article>
+                ))}
+              </div>
+            ) : null}
           </article>
         </section>
       )}
@@ -241,7 +346,7 @@ export function App() {
         <div className="agent-messages" ref={agentMessagesRef}>
           <section className="agent-summary" aria-label="风险摘要">
             <strong>风险摘要</strong>
-            <p>{selectedProject.reason}</p>
+            <p>{selectedRiskReason}</p>
           </section>
           {agentRuns[0] ? (
             <article className="agent-run">
@@ -342,6 +447,12 @@ export function App() {
   function handleSelectProject(projectID: string) {
     setCurrentView('workspace')
     setSelectedProjectID(projectID)
+    resetSelectedProjectState()
+  }
+
+  function resetSelectedProjectState() {
+    setSelectedProjectRisk(null)
+    setSelectedEvidenceBundle(null)
     setActionSuggestions([])
     setAgentRuns([])
     setAgentConversationTurns([])
@@ -358,6 +469,133 @@ export function App() {
           error instanceof Error
             ? `LLM 设置加载失败：${error.message}`
             : 'LLM 设置加载失败',
+        )
+      })
+  }
+
+  function openGitHubSettings() {
+    setCurrentView('github-settings')
+    fetchGitHubSettings()
+      .then((settings) => {
+        setGitHubSettings(settings)
+        setAPIError('')
+      })
+      .catch((error: unknown) => {
+        setAPIError(
+          error instanceof Error
+            ? `GitHub 设置加载失败：${error.message}`
+            : 'GitHub 设置加载失败',
+        )
+      })
+  }
+
+  function handleRepositoryAnalysisChange(
+    repositoryID: string,
+    analysisEnabled: boolean,
+  ) {
+    updateGitHubRepositoryAnalysis(repositoryID, analysisEnabled)
+      .then((repository) => {
+        setGitHubSettings((currentSettings) =>
+          currentSettings === null
+            ? currentSettings
+            : {
+                ...currentSettings,
+                repositories: currentSettings.repositories.map((currentRepository) =>
+                  currentRepository.id === repository.id
+                    ? repository
+                    : currentRepository,
+                ),
+              },
+        )
+        return fetchProjects().then((loadedProjects) => {
+          if (loadedProjects.length === 0) {
+            return
+          }
+          const mappedProjects = loadedProjects.map(mapProjectSummary)
+          setRiskProjects(mappedProjects)
+          if (
+            !mappedProjects.some((project) => project.id === selectedProjectID)
+          ) {
+            setSelectedProjectID(mappedProjects[0].id)
+            resetSelectedProjectState()
+          }
+        })
+      })
+      .then(() => {
+        setAPIError('')
+      })
+      .catch((error: unknown) => {
+        setAPIError(
+          error instanceof Error
+            ? `GitHub 仓库设置保存失败：${error.message}`
+            : 'GitHub 仓库设置保存失败',
+        )
+      })
+  }
+
+  function handleRepositoryLoadProject(repositoryID: string) {
+    loadGitHubRepositoryProject(repositoryID)
+      .then((repository) => {
+        setGitHubSettings((currentSettings) =>
+          currentSettings === null
+            ? currentSettings
+            : {
+                ...currentSettings,
+                repositories: currentSettings.repositories.map((currentRepository) =>
+                  currentRepository.id === repository.id
+                    ? repository
+                    : currentRepository,
+                ),
+              },
+        )
+        return fetchProjects().then((loadedProjects) => {
+          if (loadedProjects.length === 0) {
+            return
+          }
+          const mappedProjects = loadedProjects.map(mapProjectSummary)
+          setRiskProjects(mappedProjects)
+          if (
+            !mappedProjects.some((project) => project.id === selectedProjectID)
+          ) {
+            setSelectedProjectID(mappedProjects[0].id)
+            resetSelectedProjectState()
+          }
+        })
+      })
+      .then(() => {
+        setAPIError('')
+      })
+      .catch((error: unknown) => {
+        setAPIError(
+          error instanceof Error
+            ? `GitHub 仓库加载失败：${error.message}`
+            : 'GitHub 仓库加载失败',
+        )
+      })
+  }
+
+  function handleRepositorySync(repositoryID: string) {
+    triggerGitHubRepositorySync(repositoryID)
+      .then((repository) => {
+        setGitHubSettings((currentSettings) =>
+          currentSettings === null
+            ? currentSettings
+            : {
+                ...currentSettings,
+                repositories: currentSettings.repositories.map((currentRepository) =>
+                  currentRepository.id === repository.id
+                    ? repository
+                    : currentRepository,
+                ),
+              },
+        )
+        setAPIError('')
+      })
+      .catch((error: unknown) => {
+        setAPIError(
+          error instanceof Error
+            ? `GitHub 仓库同步失败：${error.message}`
+            : 'GitHub 仓库同步失败',
         )
       })
   }
@@ -400,6 +638,137 @@ export function App() {
       })
       .finally(() => setIsSendingAgentMessage(false))
   }
+}
+
+function GitHubSettingsPanel({
+  installationStartURL,
+  onRepositoryAnalysisChange,
+  onRepositoryLoadProject,
+  onRepositorySync,
+  settings,
+}: {
+  installationStartURL: string
+  onRepositoryAnalysisChange: (
+    repositoryID: string,
+    analysisEnabled: boolean,
+  ) => void
+  onRepositoryLoadProject: (repositoryID: string) => void
+  onRepositorySync: (repositoryID: string) => void
+  settings: GitHubSettings
+}) {
+  const enabledRepositoryCount = settings.repositories.filter(
+    (repository) => repository.analysis_enabled !== false,
+  ).length
+  const storageUnavailable = settings.storage_status === 'unavailable'
+  const installationConfigured = settings.installation_configured !== false
+  const connectionLabel = storageUnavailable
+    ? '后端数据库未连接'
+    : !installationConfigured
+      ? 'GitHub App 未配置'
+    : settings.connected
+      ? 'GitHub 已连接'
+      : 'GitHub 未连接'
+  const connectionDescription = storageUnavailable
+    ? '后端当前以无数据库开发模式运行，无法读取已授权仓库。'
+    : !installationConfigured
+      ? '先配置 GitHub App ID、slug、private key 和 setup state secret。'
+    : settings.connected
+      ? 'Agent 可以读取下列授权仓库的 PR、CI、Issue 和项目元数据。'
+      : '连接 GitHub 后，Agent 才能读取仓库、PR、CI 和 Issue。'
+
+  return (
+    <div className="llm-settings-list">
+      <article className="llm-provider-card">
+        <div className="llm-provider-header">
+          <h3>GitHub App</h3>
+          <strong className={settings.connected ? 'status-ready' : 'status-empty'}>
+            {connectionLabel}
+          </strong>
+        </div>
+        <p>{connectionDescription}</p>
+        {storageUnavailable || !installationConfigured ? (
+          <button disabled type="button">
+            {installationConfigured ? '连接 GitHub' : 'GitHub App 未配置'}
+          </button>
+        ) : (
+          <a className="github-installation-link" href={installationStartURL}>
+            {settings.connected ? '管理 GitHub 授权' : '连接 GitHub'}
+          </a>
+        )}
+        {settings.permissions.length > 0 ? (
+          <div className="evidence-chips" aria-label="GitHub 权限">
+            {settings.permissions.map((permission) => (
+              <span key={permission}>{permission}</span>
+            ))}
+          </div>
+        ) : null}
+        {settings.connected && enabledRepositoryCount === 0 ? (
+          <p className="form-error">尚未选择纳入分析的仓库</p>
+        ) : null}
+      </article>
+      {settings.repositories.map((repository) => (
+        <article className="llm-provider-card" key={repository.id}>
+          <div className="llm-provider-header">
+            <h3>{repository.full_name}</h3>
+            <strong className="status-ready">可读取</strong>
+          </div>
+          {repository.project_id ? (
+            <>
+              <p>绑定项目：{repository.project_id}</p>
+              <p>同步状态：{formatGitHubSyncStatus(repository.sync_status)}</p>
+              {repository.last_synced_at ? (
+                <p>最近同步：{formatUTCMinute(repository.last_synced_at)}</p>
+              ) : null}
+              {repository.sync_failure_reason ? (
+                <p className="form-error">{repository.sync_failure_reason}</p>
+              ) : null}
+              <button
+                disabled={repository.sync_status === 'syncing'}
+                onClick={() => onRepositorySync(repository.id)}
+                type="button"
+              >
+                {repository.sync_status === 'syncing' ? '同步中' : '同步仓库'}
+              </button>
+              <RepositoryAnalysisToggle
+                onChange={(analysisEnabled) =>
+                  onRepositoryAnalysisChange(repository.id, analysisEnabled)
+                }
+                repository={repository}
+              />
+            </>
+          ) : (
+            <>
+              <p>尚未加载到 Dev Time 项目</p>
+              <button onClick={() => onRepositoryLoadProject(repository.id)} type="button">
+                加载到 Dev Time
+              </button>
+            </>
+          )}
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function RepositoryAnalysisToggle({
+  onChange,
+  repository,
+}: {
+  onChange: (analysisEnabled: boolean) => void
+  repository: GitHubRepositoryAccess
+}) {
+  const analysisEnabled = repository.analysis_enabled !== false
+
+  return (
+    <label className="repository-analysis-toggle">
+      <input
+        checked={analysisEnabled}
+        onChange={(event) => onChange(event.target.checked)}
+        type="checkbox"
+      />
+      <span>纳入 Dev Time 分析</span>
+    </label>
+  )
 }
 
 type LLMProviderCardProps = {
@@ -529,6 +898,39 @@ function formatActionStatus(status: ActionSuggestion['status']): string {
     failed: '失败',
   }
   return labels[status]
+}
+
+function formatGitHubSyncStatus(status: string): string {
+  const labels: Record<string, string> = {
+    failed: '同步失败',
+    not_synced: '未同步',
+    stale: '已过期',
+    succeeded: '已同步',
+    syncing: '同步中',
+  }
+  return labels[status] ?? '未同步'
+}
+
+function formatEvidenceEventType(eventType: string): string {
+  const labels: Record<string, string> = {
+    check_run: 'Check run',
+    pull_request: 'Pull request',
+    workflow_run: 'Workflow run',
+  }
+  return labels[eventType] ?? eventType
+}
+
+function formatUTCMinute(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+  const year = date.getUTCFullYear()
+  const month = `${date.getUTCMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getUTCDate()}`.padStart(2, '0')
+  const hour = `${date.getUTCHours()}`.padStart(2, '0')
+  const minute = `${date.getUTCMinutes()}`.padStart(2, '0')
+  return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
 function formatAgentType(agentType: string): string {

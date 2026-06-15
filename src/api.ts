@@ -5,6 +5,12 @@ import type {
   AgentConversationTurn,
   AgentRun,
   AgentRunsResponse,
+  EvidenceBundle,
+  GitHubRepositoryAccess,
+  GitHubRepositoryAnalysisResponse,
+  GitHubRepositoryLoadProjectResponse,
+  GitHubRepositorySyncResponse,
+  GitHubSettings,
   LLMProviderConfig,
   LLMProvidersResponse,
   ProjectRisk,
@@ -17,7 +23,12 @@ export type {
   ActionSuggestion,
   AgentConversationTurn,
   AgentRun,
+  EvidenceBundle,
+  EvidenceEvent,
+  GitHubRepositoryAccess,
+  GitHubSettings,
   LLMProviderConfig,
+  ProjectRisk,
   ProjectSummary,
   ReasoningTraceStep,
 } from './api-types'
@@ -65,6 +76,19 @@ export async function fetchProjectRisk(projectID: string): Promise<ProjectRisk> 
   }
 
   return (await response.json()) as ProjectRisk
+}
+
+export async function fetchEvidenceBundle(
+  riskAssessmentID: string,
+): Promise<EvidenceBundle> {
+  const response = await fetch(
+    `${apiBaseURL}/api/risk-assessments/${riskAssessmentID}/evidence-bundle`,
+  )
+  if (!response.ok) {
+    throw new Error(`load evidence bundle failed: ${response.status}`)
+  }
+
+  return (await response.json()) as EvidenceBundle
 }
 
 export async function fetchAgentConversation(
@@ -127,6 +151,69 @@ export async function fetchLLMProviders(): Promise<LLMProviderConfig[]> {
 
   const body = (await response.json()) as LLMProvidersResponse
   return body.providers ?? []
+}
+
+export async function fetchGitHubSettings(): Promise<GitHubSettings> {
+  const response = await fetch(`${apiBaseURL}/api/settings/github`)
+  if (!response.ok) {
+    throw new Error(`load github settings failed: ${response.status}`)
+  }
+
+  return (await response.json()) as GitHubSettings
+}
+
+export function githubInstallationStartURL(): string {
+  return `${apiBaseURL}/api/github/installations/start`
+}
+
+export async function updateGitHubRepositoryAnalysis(
+  repositoryID: string,
+  analysisEnabled: boolean,
+): Promise<GitHubRepositoryAccess> {
+  const response = await fetch(
+    `${apiBaseURL}/api/settings/github/repositories/${repositoryID}/analysis`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ analysis_enabled: analysisEnabled }),
+    },
+  )
+  if (!response.ok) {
+    throw new Error(`update github repository analysis failed: ${response.status}`)
+  }
+
+  const body = (await response.json()) as GitHubRepositoryAnalysisResponse
+  return body.repository
+}
+
+export async function triggerGitHubRepositorySync(
+  repositoryID: string,
+): Promise<GitHubRepositoryAccess> {
+  const response = await fetch(
+    `${apiBaseURL}/api/settings/github/repositories/${repositoryID}/sync`,
+    { method: 'POST' },
+  )
+  if (!response.ok) {
+    throw new Error(`trigger github repository sync failed: ${response.status}`)
+  }
+
+  const body = (await response.json()) as GitHubRepositorySyncResponse
+  return body.repository
+}
+
+export async function loadGitHubRepositoryProject(
+  repositoryID: string,
+): Promise<GitHubRepositoryAccess> {
+  const response = await fetch(
+    `${apiBaseURL}/api/settings/github/repositories/${repositoryID}/load-project`,
+    { method: 'POST' },
+  )
+  if (!response.ok) {
+    throw new Error(`load github repository project failed: ${response.status}`)
+  }
+
+  const body = (await response.json()) as GitHubRepositoryLoadProjectResponse
+  return body.repository
 }
 
 export async function saveLLMProvider(

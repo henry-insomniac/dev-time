@@ -185,6 +185,19 @@ body,
   font-weight: 500;
 }
 
+.llm-provider-card .repository-analysis-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.llm-provider-card .repository-analysis-toggle input {
+  min-height: 20px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+}
+
 .llm-provider-card button {
   min-height: 42px;
   border: 2px solid #172033;
@@ -193,6 +206,20 @@ body,
   color: #172033;
   font: inherit;
   font-weight: 800;
+}
+
+.github-installation-link {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #00d084;
+  color: #172033;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
 }
 
 .llm-provider-card button:disabled {
@@ -372,6 +399,7 @@ body,
   font-size: 12px;
   line-height: 1.4;
   background: #f4f7e3;
+  overflow-wrap: anywhere;
 }
 
 .conversation-turn small {
@@ -394,6 +422,25 @@ body,
   padding: 3px 8px;
   font-size: 12px;
   font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.evidence-events {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.evidence-event {
+  display: grid;
+  gap: 4px;
+  border-left: 3px solid #2f6fed;
+  background: #eef5ff;
+  padding: 10px 12px;
+}
+
+.evidence-event small {
+  color: #4c5b73;
   overflow-wrap: anywhere;
 }
 
