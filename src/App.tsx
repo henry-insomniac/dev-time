@@ -318,6 +318,7 @@ export function App() {
                 onRepositoryAnalysisChange={handleRepositoryAnalysisChange}
                 onRepositoryLoadProject={handleRepositoryLoadProject}
                 onRepositorySync={handleRepositorySync}
+                onSettingsRefresh={openGitHubSettings}
                 settings={githubSettings}
               />
           ) : (
@@ -747,6 +748,7 @@ function GitHubSettingsPanel({
   onRepositoryAnalysisChange,
   onRepositoryLoadProject,
   onRepositorySync,
+  onSettingsRefresh,
   settings,
 }: {
   installationStartURL: string
@@ -756,6 +758,7 @@ function GitHubSettingsPanel({
   ) => void
   onRepositoryLoadProject: (repositoryID: string) => void
   onRepositorySync: (repositoryID: string) => void
+  onSettingsRefresh: () => void
   settings: GitHubSettings
 }) {
   const enabledRepositoryCount = settings.repositories.filter(
@@ -792,9 +795,23 @@ function GitHubSettingsPanel({
           <button disabled type="button">
             {installationConfigured ? '连接 GitHub' : 'GitHub App 未配置'}
           </button>
+        ) : settings.connected ? (
+          <div className="github-authorization-actions">
+            <button onClick={onSettingsRefresh} type="button">
+              刷新 GitHub 授权
+            </button>
+            <a
+              className="github-management-link"
+              href={installationStartURL}
+              rel="noreferrer"
+              target="_blank"
+            >
+              调整仓库范围
+            </a>
+          </div>
         ) : (
           <a className="github-installation-link" href={installationStartURL}>
-            {settings.connected ? '管理 GitHub 授权' : '连接 GitHub'}
+            连接 GitHub
           </a>
         )}
         {settings.permissions.length > 0 ? (

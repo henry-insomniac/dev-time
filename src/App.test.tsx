@@ -395,6 +395,62 @@ describe('Dev Time risk workspace', () => {
     )
   })
 
+  it('GitHub 已连接时站内刷新授权而不是跳到安装管理页', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/api/settings/github')) {
+        return jsonResponse({
+          connected: true,
+          provider: 'github_app',
+          repositories: [
+            {
+              id: 'repo_9001',
+              github_id: 9001,
+              owner: 'henry-insomniac',
+              name: 'dev-time-server',
+              full_name: 'henry-insomniac/dev-time-server',
+              project_id: 'project_repo_9001',
+              analysis_enabled: true,
+              sync_status: 'not_synced',
+              last_synced_at: null,
+              sync_failure_reason: null,
+            },
+          ],
+          permissions: ['metadata:read', 'pull_requests:read', 'checks:read'],
+        })
+      }
+      return jsonResponse({ projects: [] })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: /GitHub 设置/i }))
+
+    const refreshButton = await screen.findByRole('button', {
+      name: /刷新 GitHub 授权/i,
+    })
+    expect(
+      screen.queryByRole('link', { name: /管理 GitHub 授权/i }),
+    ).not.toBeInTheDocument()
+
+    const manageLink = screen.getByRole('link', { name: /调整仓库范围/i })
+    expect(manageLink).toHaveAttribute(
+      'href',
+      'http://localhost:8080/api/github/installations/start',
+    )
+    expect(manageLink).toHaveAttribute('target', '_blank')
+
+    fireEvent.click(refreshButton)
+
+    await waitFor(() => {
+      const settingsCalls = fetchMock.mock.calls.filter(([input]) =>
+        String(input).endsWith('/api/settings/github'),
+      )
+      expect(settingsCalls).toHaveLength(2)
+    })
+  })
+
   it('GitHub 设置在后端无数据库时显示本地存储状态', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)

@@ -274,6 +274,13 @@ body,
   font-weight: 800;
 }
 
+.github-authorization-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .github-installation-link {
   min-height: 42px;
   display: inline-flex;
@@ -282,6 +289,21 @@ body,
   border: 2px solid #172033;
   border-radius: 8px;
   background: #00d084;
+  color: #172033;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.github-management-link {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  padding: 0 16px;
+  background: #fff6cc;
   color: #172033;
   font: inherit;
   font-weight: 800;
