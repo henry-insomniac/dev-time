@@ -24,7 +24,7 @@ jobs:
       - run: corepack pnpm test
       - run: corepack pnpm build
         env:
-          VITE_API_BASE_URL: https://dev-time.yiflow.com
+          VITE_API_BASE_URL: https://dev-time.yi-flow.com
 
   deploy:
     needs: validate
@@ -46,7 +46,7 @@ jobs:
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm build
         env:
-          VITE_API_BASE_URL: https://dev-time.yiflow.com
+          VITE_API_BASE_URL: https://dev-time.yi-flow.com
       - name: Package frontend
         run: tar -czf dev-time-frontend.tar.gz -C dist .
       - name: Install SSH key
