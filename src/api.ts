@@ -5,6 +5,7 @@ import type {
   AgentConversationTurn,
   AgentRun,
   AgentRunsResponse,
+  AuthSession,
   EvidenceBundle,
   GitHubRepositoryAccess,
   GitHubRepositoryAnalysisResponse,
@@ -23,6 +24,7 @@ export type {
   ActionSuggestion,
   AgentConversationTurn,
   AgentRun,
+  AuthSession,
   EvidenceBundle,
   EvidenceEvent,
   GitHubRepositoryAccess,
@@ -34,6 +36,20 @@ export type {
 } from './api-types'
 
 const apiBaseURL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+
+export async function fetchAuthSession(): Promise<AuthSession> {
+  const response = await fetch(`${apiBaseURL}/api/auth/session`, {
+    credentials: 'include',
+  })
+  if (!response.ok) {
+    throw new Error(`load auth session failed: ${response.status}`)
+  }
+  return (await response.json()) as AuthSession
+}
+
+export function githubOAuthStartURL(): string {
+  return `${apiBaseURL}/api/auth/github/start`
+}
 
 export async function fetchProjects(): Promise<ProjectSummary[]> {
   const response = await fetch(`${apiBaseURL}/api/projects`)
@@ -127,6 +143,73 @@ export async function sendAgentConversationTurn(
   }
 
   return (await response.json()) as AgentConversationTurn
+}
+
+export async function sendAgentConversationTurnStream(
+  conversationID: string,
+  riskAssessmentID: string,
+  message: string,
+  onDelta: (text: string) => void,
+): Promise<AgentConversationTurn> {
+  const response = await fetch(
+    `${apiBaseURL}/api/agent-conversations/${conversationID}/turns/stream`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        risk_assessment_id: riskAssessmentID,
+      }),
+    },
+  )
+  if (!response.ok || response.body === null) {
+    return sendAgentConversationTurn(conversationID, riskAssessmentID, message)
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let finalTurn: AgentConversationTurn | null = null
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) {
+      break
+    }
+    buffer += decoder.decode(value, { stream: true })
+    const events = buffer.split('\n\n')
+    buffer = events.pop() ?? ''
+    for (const eventBlock of events) {
+      const event = parseSSEEvent(eventBlock)
+      if (event.event === 'delta') {
+        const payload = JSON.parse(event.data) as { text?: string }
+        if (payload.text) {
+          onDelta(payload.text)
+        }
+      }
+      if (event.event === 'turn') {
+        finalTurn = JSON.parse(event.data) as AgentConversationTurn
+      }
+    }
+  }
+  if (finalTurn === null) {
+    throw new Error('streamed agent conversation turn missing final event')
+  }
+  return finalTurn
+}
+
+function parseSSEEvent(block: string): { event: string; data: string } {
+  let event = ''
+  let data = ''
+  for (const line of block.split('\n')) {
+    if (line.startsWith('event: ')) {
+      event = line.slice('event: '.length)
+    }
+    if (line.startsWith('data: ')) {
+      data += line.slice('data: '.length)
+    }
+  }
+  return { event, data }
 }
 
 export async function confirmActionSuggestion(

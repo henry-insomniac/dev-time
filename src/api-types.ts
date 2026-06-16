@@ -9,6 +9,16 @@ export type ProjectsResponse = {
   projects: ProjectSummary[]
 }
 
+export type AuthSession = {
+  connected: boolean
+  user: {
+    login: string
+    name: string
+    avatar_url: string
+    html_url: string
+  } | null
+}
+
 export type ActionSuggestion = {
   id: string
   project_id: string

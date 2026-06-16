@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react'
+import { CheckCircle2, ChevronDown, CircleX, GitMerge } from 'lucide-react'
 import { useState } from 'react'
 
 import type { AgentConversationTurn } from './api'
@@ -36,9 +36,20 @@ export function AgentConversationList({ turns }: AgentConversationListProps) {
                   </span>
                 ) : null}
               </div>
-              <p>{turn.agent_response}</p>
+              <MarkdownMessage content={turn.agent_response} />
             </div>
           </div>
+          <PRStatusCard turn={turn} />
+          <IssueStatusCard turn={turn} />
+          {Object.keys(turn.entities ?? {}).length > 0 ? (
+            <div className="trace-entities" aria-label="Trace 实体">
+              {Object.entries(turn.entities ?? {}).map(([name, value]) => (
+                <span key={name}>
+                  {name}: {formatEntityValue(value)}
+                </span>
+              ))}
+            </div>
+          ) : null}
           {(turn.evidence_refs ?? []).length > 0 ? (
             <div className="evidence-chips" aria-label="回复证据">
               {(turn.evidence_refs ?? []).map((evidenceRef) => (
@@ -146,6 +157,165 @@ export function AgentConversationList({ turns }: AgentConversationListProps) {
   }
 }
 
+function PRStatusCard({ turn }: { turn: AgentConversationTurn }) {
+  const prNumber = Number((turn.entities ?? {}).pr_number)
+  if (!Number.isFinite(prNumber) || prNumber <= 0) {
+    return null
+  }
+  const status = inferTurnStatus(turn)
+  const url = findEntityURL(turn.entities, 'pull_request')
+  const StatusIcon =
+    status === 'merged' ? GitMerge : status === 'passed' ? CheckCircle2 : CircleX
+
+  return (
+    <article
+      className={`pr-status-card pr-status-card-${status}`}
+      aria-label={`PR #${prNumber} 状态`}
+    >
+      <div className="pr-status-card-header">
+        <StatusIcon aria-hidden="true" size={18} />
+        <strong>PR #{prNumber}</strong>
+        <span>{formatPRStatus(status)}</span>
+      </div>
+      {url ? <a href={url}>打开 PR</a> : null}
+    </article>
+  )
+}
+
+function IssueStatusCard({ turn }: { turn: AgentConversationTurn }) {
+  const issueNumber = Number((turn.entities ?? {}).issue_number)
+  if (!Number.isFinite(issueNumber) || issueNumber <= 0) {
+    return null
+  }
+  const status = inferIssueStatus(turn)
+  const url = findEntityURL(turn.entities, 'issue')
+  const StatusIcon = status === 'closed' ? CheckCircle2 : CircleX
+
+  return (
+    <article
+      className={`pr-status-card issue-status-card-${status}`}
+      aria-label={`Issue #${issueNumber} 状态`}
+    >
+      <div className="pr-status-card-header">
+        <StatusIcon aria-hidden="true" size={18} />
+        <strong>Issue #{issueNumber}</strong>
+        <span>{formatIssueStatus(status)}</span>
+      </div>
+      {url ? <a href={url}>打开 Issue</a> : null}
+    </article>
+  )
+}
+
+function MarkdownMessage({ content }: { content: string }) {
+  const parts = content.split(/```(?:\w+)?\n?([\s\S]*?)```/g)
+  return (
+    <div className="markdown-message">
+      {parts.map((part, index) =>
+        index % 2 === 1 ? (
+          <pre key={`${index}-${part.slice(0, 12)}`}>
+            <code>{part.trim()}</code>
+          </pre>
+        ) : (
+          part
+            .split(/\n{2,}/)
+            .filter((paragraph) => paragraph.trim() !== '')
+            .map((paragraph) => (
+              <p key={`${index}-${paragraph.slice(0, 12)}`}>
+                {paragraph.trim()}
+              </p>
+            ))
+        ),
+      )}
+    </div>
+  )
+}
+
+function inferTurnStatus(turn: AgentConversationTurn): 'passed' | 'failed' | 'merged' {
+  const text = `${turn.intent} ${turn.agent_response}`.toLowerCase()
+  if (text.includes('merge') || text.includes('merged') || text.includes('合并')) {
+    return 'merged'
+  }
+  if (text.includes('失败') || text.includes('红') || text.includes('failure') || text.includes('failed')) {
+    return 'failed'
+  }
+  return 'passed'
+}
+
+function formatPRStatus(status: 'passed' | 'failed' | 'merged'): string {
+  const labels = {
+    passed: '通过',
+    failed: '失败',
+    merged: '已合并',
+  }
+  return labels[status]
+}
+
+function inferIssueStatus(turn: AgentConversationTurn): 'open' | 'closed' {
+  const text = `${turn.intent} ${turn.agent_response}`.toLowerCase()
+  if (
+    text.includes('closed') ||
+    text.includes('resolved') ||
+    text.includes('fixed') ||
+    text.includes('关闭') ||
+    text.includes('已解决') ||
+    text.includes('修复')
+  ) {
+    return 'closed'
+  }
+  return 'open'
+}
+
+function formatIssueStatus(status: 'open' | 'closed'): string {
+  const labels = {
+    open: '未关闭',
+    closed: '已关闭',
+  }
+  return labels[status]
+}
+
+function findEntityURL(entities: Record<string, unknown>, entityName: string): string {
+  const entity = entities[entityName]
+  if (
+    entity &&
+    typeof entity === 'object' &&
+    'url' in entity &&
+    typeof entity.url === 'string'
+  ) {
+    return entity.url
+  }
+  if (
+    entity &&
+    typeof entity === 'object' &&
+    'html_url' in entity &&
+    typeof entity.html_url === 'string'
+  ) {
+    return entity.html_url
+  }
+  return ''
+}
+
+function formatEntityValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+  if (typeof value === 'object') {
+    if (
+      'name' in value &&
+      typeof value.name === 'string'
+    ) {
+      return value.name
+    }
+    if (
+      'full_name' in value &&
+      typeof value.full_name === 'string'
+    ) {
+      return value.full_name
+    }
+    return JSON.stringify(value)
+  }
+  return String(value)
+}
+
 function formatAgentIntent(intent: string): string {
   const labels: Record<string, string> = {
     smalltalk: '普通对话',
@@ -160,6 +330,7 @@ function formatAgentIntent(intent: string): string {
     github_pull_requests_list: 'GitHub PR 列表',
     github_issues_list: 'GitHub Issue 列表',
     github_checks_list: 'GitHub CI 列表',
+    github_pr_ci_diagnosis: 'PR CI 诊断',
   }
   return labels[intent] ?? intent
 }
@@ -179,6 +350,7 @@ function formatAgentCapability(capability: string): string {
     'github.pull_requests.list': 'GitHub PR 列表',
     'github.issues.list': 'GitHub Issue 列表',
     'github.checks.list': 'GitHub CI 列表',
+    'github.checks.logs': 'GitHub CI 日志',
   }
   return labels[capability] ?? capability
 }

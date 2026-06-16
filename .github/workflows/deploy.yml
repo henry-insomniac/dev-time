@@ -1,0 +1,76 @@
+name: Deploy dev-time frontend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: dev-time-frontend-production
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm lint
+      - run: corepack pnpm test
+      - run: corepack pnpm build
+        env:
+          VITE_API_BASE_URL: https://dev-time.yiflow.com
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main'
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm build
+        env:
+          VITE_API_BASE_URL: https://dev-time.yiflow.com
+      - name: Package frontend
+        run: tar -czf dev-time-frontend.tar.gz -C dist .
+      - name: Install SSH key
+        run: |
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          test -n "$DEPLOY_SSH_KEY"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$DEPLOY_PORT" "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+      - name: Upload frontend
+        run: |
+          scp -i ~/.ssh/deploy_key -P "$DEPLOY_PORT" \
+            dev-time-frontend.tar.gz \
+            "$DEPLOY_USER@$DEPLOY_HOST:/tmp/dev-time-frontend-${GITHUB_SHA}.tar.gz"
+      - name: Activate frontend
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "set -euo pipefail
+             release=/var/www/dev-time/releases/${GITHUB_SHA}
+             install -d \"\$release\"
+             tar -xzf /tmp/dev-time-frontend-${GITHUB_SHA}.tar.gz -C \"\$release\"
+             ln -sfn \"\$release\" /var/www/dev-time/current
+             rm -f /tmp/dev-time-frontend-${GITHUB_SHA}.tar.gz
+             nginx -t
+             systemctl reload nginx"

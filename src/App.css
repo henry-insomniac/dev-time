@@ -71,6 +71,72 @@ body,
   font-weight: 800;
 }
 
+.repository-selector {
+  display: grid;
+  gap: 6px;
+  margin-top: 18px;
+  font-weight: 800;
+}
+
+.repository-selector select {
+  min-height: 42px;
+  min-width: 0;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  padding: 0 10px;
+  font: inherit;
+  font-weight: 700;
+}
+
+.github-user-card {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  padding: 8px;
+  text-decoration: none;
+}
+
+.github-user-card-empty {
+  justify-content: center;
+  background: #00d084;
+  font-weight: 900;
+}
+
+.github-user-card img {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border: 2px solid #172033;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.github-user-card span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.github-user-card strong,
+.github-user-card small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-user-card small {
+  color: #465066;
+  font-weight: 700;
+}
+
 .api-error {
   border: 2px solid #172033;
   border-radius: 8px;
@@ -287,6 +353,35 @@ body,
   gap: 8px;
 }
 
+.prompt-suggestions {
+  display: grid;
+  gap: 8px;
+}
+
+.prompt-suggestions button {
+  min-height: 38px;
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  padding: 6px 10px;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.streaming-response {
+  width: fit-content;
+  max-width: min(100%, 34rem);
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .agent-run {
   display: grid;
   gap: 10px;
@@ -403,6 +498,92 @@ body,
 }
 
 .conversation-turn small {
+  overflow-wrap: anywhere;
+}
+
+.markdown-message {
+  display: grid;
+  gap: 8px;
+}
+
+.markdown-message pre {
+  margin: 0;
+  max-width: 100%;
+  overflow: auto;
+  border: 1px solid #172033;
+  border-radius: 6px;
+  background: #172033;
+  color: #ffffff;
+  padding: 8px;
+}
+
+.markdown-message code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+
+.pr-status-card,
+.trace-entities {
+  border: 2px solid #172033;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.pr-status-card {
+  display: grid;
+  gap: 8px;
+}
+
+.pr-status-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pr-status-card-passed svg,
+.issue-status-card-closed svg {
+  color: #12805c;
+}
+
+.pr-status-card-failed svg,
+.issue-status-card-open svg {
+  color: #c2410c;
+}
+
+.pr-status-card-merged svg {
+  color: #7c3aed;
+}
+
+.pr-status-card-header span {
+  border: 1px solid #172033;
+  border-radius: 999px;
+  background: #ffe2e2;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pr-status-card a {
+  color: #172033;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.trace-entities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trace-entities span {
+  border: 1px solid #172033;
+  border-radius: 999px;
+  background: #eef5ff;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 800;
   overflow-wrap: anywhere;
 }
 

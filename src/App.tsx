@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 
 import {
   confirmActionSuggestion,
+  fetchAuthSession,
   fetchAgentRuns,
   fetchActionSuggestions,
   fetchEvidenceBundle,
@@ -17,14 +18,17 @@ import {
   fetchProjects,
   fetchProjectRisk,
   githubInstallationStartURL,
+  githubOAuthStartURL,
   loadGitHubRepositoryProject,
   saveLLMProvider,
   sendAgentConversationTurn,
+  sendAgentConversationTurnStream,
   triggerGitHubRepositorySync,
   updateGitHubRepositoryAnalysis,
   type AgentRun,
   type AgentConversationTurn,
   type ActionSuggestion,
+  type AuthSession,
   type EvidenceBundle,
   type GitHubSettings,
   type GitHubRepositoryAccess,
@@ -74,11 +78,16 @@ export function App() {
   const [llmProviders, setLLMProviders] = useState<LLMProviderConfig[]>([])
   const [llmAPIKeys, setLLMAPIKeys] = useState<Record<string, string>>({})
   const [githubSettings, setGitHubSettings] = useState<GitHubSettings | null>(null)
+  const [authSession, setAuthSession] = useState<AuthSession>({
+    connected: false,
+    user: null,
+  })
   const [agentMessage, setAgentMessage] = useState('')
   const [agentConversationTurns, setAgentConversationTurns] = useState<
     AgentConversationTurn[]
   >([])
   const [isSendingAgentMessage, setIsSendingAgentMessage] = useState(false)
+  const [streamingAgentResponse, setStreamingAgentResponse] = useState('')
   const [agentMessageError, setAgentMessageError] = useState('')
   const [currentView, setCurrentView] = useState<
     'workspace' | 'llm-settings' | 'github-settings'
@@ -88,6 +97,18 @@ export function App() {
 
   useEffect(() => {
     let ignore = false
+
+    fetchAuthSession()
+      .then((session) => {
+        if (!ignore) {
+          setAuthSession(session)
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setAuthSession({ connected: false, user: null })
+        }
+      })
 
     fetchProjects()
       .then((loadedProjects) => {
@@ -121,7 +142,6 @@ export function App() {
 
   useEffect(() => {
     let ignore = false
-    setSelectedEvidenceBundle(null)
 
     fetchProjectRisk(selectedProjectID)
       .then((projectRisk) => {
@@ -213,6 +233,21 @@ export function App() {
         >
           GitHub 设置
         </button>
+        <GitHubUserCard session={authSession} />
+        <label className="repository-selector">
+          选择仓库
+          <select
+            aria-label="选择仓库"
+            onChange={(event) => handleSelectProject(event.target.value)}
+            value={selectedProjectID}
+          >
+            {riskProjects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="queue-list">
           {apiError ? <p className="api-error">{apiError}</p> : null}
           {riskProjects.map((project) => (
@@ -396,6 +431,29 @@ export function App() {
             ))}
           </div>
           <AgentConversationList turns={agentConversationTurns} />
+          {streamingAgentResponse ? (
+            <div className="streaming-response" aria-label="Agent 流式回复">
+              {streamingAgentResponse}
+            </div>
+          ) : null}
+          {agentConversationTurns.length === 0 ? (
+            <div className="prompt-suggestions" aria-label="快捷指令">
+              {[
+                '分析当前仓库最新 CI 失败原因',
+                '帮我看看 #12 PR 为什么红了？',
+                '列出当前仓库打开的 PR',
+                '生成下一步行动计划',
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => sendAgentMessage(prompt)}
+                  type="button"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
         <form className="agent-input" onSubmit={handleSendAgentMessage}>
           <label htmlFor="agent-message">询问 Agent</label>
@@ -606,23 +664,39 @@ export function App() {
     if (message === '') {
       return
     }
+    sendAgentMessage(message)
+  }
 
+  function sendAgentMessage(message: string) {
     setIsSendingAgentMessage(true)
     setAgentMessageError('')
+    setStreamingAgentResponse('')
     fetchProjectRisk(selectedProject.id)
       .then((projectRisk) =>
         fetchAgentConversation(
           selectedProject.id,
           projectRisk.assessment.id,
-        ).then((conversation) =>
-          sendAgentConversationTurn(
+        ).then((conversation) => {
+          let streamedText = ''
+          return sendAgentConversationTurnStream(
             conversation.id,
             projectRisk.assessment.id,
             message,
-          ),
-        ),
+            (delta) => {
+              streamedText += delta
+              setStreamingAgentResponse(streamedText)
+            },
+          ).catch(() =>
+            sendAgentConversationTurn(
+              conversation.id,
+              projectRisk.assessment.id,
+              message,
+            ),
+          )
+        }),
       )
       .then((turn) => {
+        setStreamingAgentResponse('')
         setAgentConversationTurns((currentTurns) => [...currentTurns, turn])
         setAgentMessage('')
         if (turn.approval_request) {
@@ -638,6 +712,27 @@ export function App() {
       })
       .finally(() => setIsSendingAgentMessage(false))
   }
+}
+
+function GitHubUserCard({ session }: { session: AuthSession }) {
+  if (!session.connected || session.user === null) {
+    return (
+      <a className="github-user-card github-user-card-empty" href={githubOAuthStartURL()}>
+        Connect with GitHub
+      </a>
+    )
+  }
+
+  const displayName = session.user.name || session.user.login
+  return (
+    <a className="github-user-card" href={session.user.html_url}>
+      <img alt={`${displayName} GitHub 头像`} src={session.user.avatar_url} />
+      <span>
+        <strong>{displayName}</strong>
+        <small>@{session.user.login}</small>
+      </span>
+    </a>
+  )
 }
 
 function GitHubSettingsPanel({
