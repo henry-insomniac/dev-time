@@ -443,6 +443,39 @@ describe('Dev Time Agent conversation', () => {
     )
   })
 
+  it('没有加载真实项目时提示先连接 GitHub 而不是暴露风险 404', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.endsWith('/api/projects')) {
+        return jsonResponse({ projects: [] })
+      }
+      if (url.endsWith('/api/projects/project_agent/risk')) {
+        return jsonResponse({ error: 'not found' }, { status: 404 })
+      }
+      if (url.includes('/action-suggestions')) {
+        return jsonResponse({ action_suggestions: [] })
+      }
+      if (url.includes('/agent-runs')) {
+        return jsonResponse({ agent_runs: [] })
+      }
+      return jsonResponse({})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<App />)
+
+    await screen.findByText(/当前项目：dev-time-agent/i)
+    fireEvent.change(screen.getByLabelText(/询问 Agent/i), {
+      target: { value: '你好' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /发送/i }))
+
+    expect(
+      await screen.findByText(/请先在 GitHub 设置中连接 GitHub/i),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/load project risk failed/i)).not.toBeInTheDocument()
+  })
+
   it('展示 GitHub OAuth 用户头像和基本信息', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
@@ -502,9 +535,11 @@ describe('Dev Time Agent conversation', () => {
   })
 })
 
-function jsonResponse(body: unknown): Response {
+function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
+  const status = init.status ?? 200
   return {
-    ok: true,
+    ok: status >= 200 && status < 300,
+    status,
     json: async () => body,
   } as Response
 }

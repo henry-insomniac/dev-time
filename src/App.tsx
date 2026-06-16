@@ -706,6 +706,13 @@ export function App() {
         }
       })
       .catch((error: unknown) => {
+        const errorMessage = error instanceof Error ? error.message : ''
+        if (errorMessage.includes('load project risk failed: 404')) {
+          setAgentMessageError(
+            '发送失败：请先在 GitHub 设置中连接 GitHub，并把仓库加载到 Dev Time 后再询问 Agent。',
+          )
+          return
+        }
         setAgentMessageError(
           error instanceof Error ? `发送失败：${error.message}` : '发送失败',
         )
