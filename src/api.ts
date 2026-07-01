@@ -14,6 +14,7 @@ import type {
   GitHubSettings,
   LLMProviderConfig,
   LLMProvidersResponse,
+  PageContext,
   ProjectRisk,
   ProjectSummary,
   ProjectsResponse,
@@ -23,6 +24,7 @@ import type {
 export type {
   ActionSuggestion,
   AgentConversationTurn,
+  AgentUIBlock,
   AgentRun,
   AuthSession,
   EvidenceBundle,
@@ -30,6 +32,7 @@ export type {
   GitHubRepositoryAccess,
   GitHubSettings,
   LLMProviderConfig,
+  PageContext,
   ProjectRisk,
   ProjectSummary,
   ReasoningTraceStep,
@@ -126,16 +129,25 @@ export async function sendAgentConversationTurn(
   conversationID: string,
   riskAssessmentID: string,
   message: string,
+  pageContext?: PageContext,
 ): Promise<AgentConversationTurn> {
+  const payload: {
+    message: string
+    risk_assessment_id: string
+    page_context?: PageContext
+  } = {
+    message,
+    risk_assessment_id: riskAssessmentID,
+  }
+  if (pageContext) {
+    payload.page_context = pageContext
+  }
   const response = await fetch(
     `${apiBaseURL}/api/agent-conversations/${conversationID}/turns`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-        risk_assessment_id: riskAssessmentID,
-      }),
+      body: JSON.stringify(payload),
     },
   )
   if (!response.ok) {
@@ -149,21 +161,35 @@ export async function sendAgentConversationTurnStream(
   conversationID: string,
   riskAssessmentID: string,
   message: string,
+  pageContext: PageContext | undefined,
   onDelta: (text: string) => void,
 ): Promise<AgentConversationTurn> {
+  const payload: {
+    message: string
+    risk_assessment_id: string
+    page_context?: PageContext
+  } = {
+    message,
+    risk_assessment_id: riskAssessmentID,
+  }
+  if (pageContext) {
+    payload.page_context = pageContext
+  }
   const response = await fetch(
     `${apiBaseURL}/api/agent-conversations/${conversationID}/turns/stream`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-        risk_assessment_id: riskAssessmentID,
-      }),
+      body: JSON.stringify(payload),
     },
   )
   if (!response.ok || response.body === null) {
-    return sendAgentConversationTurn(conversationID, riskAssessmentID, message)
+    return sendAgentConversationTurn(
+      conversationID,
+      riskAssessmentID,
+      message,
+      pageContext,
+    )
   }
 
   const reader = response.body.getReader()

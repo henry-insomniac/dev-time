@@ -33,6 +33,7 @@ import {
   type GitHubSettings,
   type GitHubRepositoryAccess,
   type LLMProviderConfig,
+  type PageContext,
   type ProjectRisk,
   type ProjectSummary,
 } from './api'
@@ -679,10 +680,12 @@ export function App() {
           projectRisk.assessment.id,
         ).then((conversation) => {
           let streamedText = ''
+          const pageContext = buildAgentPageContext(selectedProject)
           return sendAgentConversationTurnStream(
             conversation.id,
             projectRisk.assessment.id,
             message,
+            pageContext,
             (delta) => {
               streamedText += delta
               setStreamingAgentResponse(streamedText)
@@ -692,6 +695,7 @@ export function App() {
               conversation.id,
               projectRisk.assessment.id,
               message,
+              pageContext,
             ),
           )
         }),
@@ -719,6 +723,27 @@ export function App() {
         )
       })
       .finally(() => setIsSendingAgentMessage(false))
+  }
+}
+
+function buildAgentPageContext(selectedProject: RiskProject): PageContext {
+  return {
+    route: window.location.pathname || '/',
+    locale: window.navigator.language,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    user_role: 'viewer',
+    selected_resource: {
+      type: 'project',
+      id: selectedProject.id,
+      name: selectedProject.name,
+    },
+    visible_fields: {
+      project_name: selectedProject.name,
+      risk_level: selectedProject.level,
+      risk_score: selectedProject.score,
+      risk_reason: selectedProject.reason,
+      evidence_summary: selectedProject.evidence,
+    },
   }
 }
 

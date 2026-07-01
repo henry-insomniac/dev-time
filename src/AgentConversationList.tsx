@@ -1,7 +1,7 @@
 import { CheckCircle2, ChevronDown, CircleX, GitMerge } from 'lucide-react'
 import { useState } from 'react'
 
-import type { AgentConversationTurn } from './api'
+import type { AgentConversationTurn, AgentUIBlock } from './api'
 
 type AgentConversationListProps = {
   turns: AgentConversationTurn[]
@@ -37,6 +37,7 @@ export function AgentConversationList({ turns }: AgentConversationListProps) {
                 ) : null}
               </div>
               <MarkdownMessage content={turn.agent_response} />
+              <AgentUIBlocks blocks={turn.ui_blocks ?? []} />
             </div>
           </div>
           <PRStatusCard turn={turn} />
@@ -155,6 +156,169 @@ export function AgentConversationList({ turns }: AgentConversationListProps) {
       })
     }
   }
+}
+
+function AgentUIBlocks({ blocks }: { blocks: AgentUIBlock[] }) {
+  const supportedBlocks = blocks.filter(isSupportedUIBlock)
+  if (supportedBlocks.length === 0) {
+    return null
+  }
+  return (
+    <div className="agent-ui-blocks" aria-label="Agent 结构化内容">
+      {supportedBlocks.map((block, index) => (
+        <AgentUIBlockView block={block} key={`${block.type}-${index}`} />
+      ))}
+    </div>
+  )
+}
+
+function AgentUIBlockView({ block }: { block: AgentUIBlock }) {
+  const props = block.props ?? {}
+  if (block.type === 'text') {
+    return (
+      <section className="agent-ui-block">
+        {stringProp(props, 'title') ? <strong>{stringProp(props, 'title')}</strong> : null}
+        <p>{stringProp(props, 'body')}</p>
+      </section>
+    )
+  }
+  if (block.type === 'repo_card') {
+    return (
+      <section className="agent-ui-block" aria-label="仓库卡片">
+        <strong>{stringProp(props, 'full_name') || stringProp(props, 'name')}</strong>
+        {stringProp(props, 'risk_level') ? (
+          <span>风险：{stringProp(props, 'risk_level')}</span>
+        ) : null}
+      </section>
+    )
+  }
+  if (block.type === 'pr_table') {
+    const rows = arrayProp(props, 'rows')
+    return (
+      <table className="agent-ui-block-table" aria-label="PR 列表">
+        <thead>
+          <tr>
+            <th>PR</th>
+            <th>标题</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={`${stringProp(row, 'number')}-${index}`}>
+              <td>#{stringProp(row, 'number')}</td>
+              <td>{stringProp(row, 'title')}</td>
+              <td>{stringProp(row, 'state')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+  if (block.type === 'check_summary') {
+    const checks = arrayProp(props, 'checks')
+    return (
+      <section className="agent-ui-block" aria-label="Checks 摘要">
+        <strong>Checks</strong>
+        {checks.map((check, index) => (
+          <p key={`${stringProp(check, 'name')}-${index}`}>
+            {stringProp(check, 'name')} ·{' '}
+            {stringProp(check, 'conclusion') || stringProp(check, 'status')}
+            {stringProp(check, 'run_id') ? ` · run ${stringProp(check, 'run_id')}` : ''}
+          </p>
+        ))}
+      </section>
+    )
+  }
+  if (block.type === 'log_excerpt') {
+    const lines = stringArrayProp(props, 'lines')
+    const text = lines.length > 0 ? lines.join('\n') : stringProp(props, 'text')
+    return (
+      <section className="agent-ui-block" aria-label="日志摘录">
+        {stringProp(props, 'title') ? <strong>{stringProp(props, 'title')}</strong> : null}
+        <pre>
+          <code>{text}</code>
+        </pre>
+      </section>
+    )
+  }
+  if (block.type === 'approval_card') {
+    const actions = arrayProp(props, 'actions')
+    return (
+      <section className="agent-ui-block" aria-label="审批卡片">
+        <strong>审批：{stringProp(props, 'status') || 'pending'}</strong>
+        {actions.map((action, index) => (
+          <div className="agent-ui-block-item" key={`${stringProp(action, 'target_ref')}-${index}`}>
+            <span>{stringProp(action, 'target_ref')}</span>
+            <p>{stringProp(action, 'draft_body')}</p>
+          </div>
+        ))}
+      </section>
+    )
+  }
+  if (block.type === 'config_diff') {
+    const files = arrayProp(props, 'files')
+    return (
+      <section className="agent-ui-block" aria-label="配置变更">
+        <strong>配置变更</strong>
+        {files.map((file, index) => (
+          <div className="agent-ui-block-item" key={`${stringProp(file, 'path')}-${index}`}>
+            <span>{stringProp(file, 'path')}</span>
+            <pre>
+              <code>
+                {stringProp(file, 'before')}
+                {'\n'}
+                {stringProp(file, 'after')}
+              </code>
+            </pre>
+          </div>
+        ))}
+      </section>
+    )
+  }
+  return null
+}
+
+function isSupportedUIBlock(block: AgentUIBlock): boolean {
+  return [
+    'text',
+    'repo_card',
+    'pr_table',
+    'check_summary',
+    'log_excerpt',
+    'approval_card',
+    'config_diff',
+  ].includes(block.type)
+}
+
+function stringProp(props: Record<string, unknown>, key: string): string {
+  const value = props[key]
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value)
+  }
+  return ''
+}
+
+function arrayProp(
+  props: Record<string, unknown>,
+  key: string,
+): Array<Record<string, unknown>> {
+  const value = props[key]
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.filter(
+    (item): item is Record<string, unknown> =>
+      Boolean(item) && typeof item === 'object' && !Array.isArray(item),
+  )
+}
+
+function stringArrayProp(props: Record<string, unknown>, key: string): string[] {
+  const value = props[key]
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.filter((item): item is string => typeof item === 'string')
 }
 
 function PRStatusCard({ turn }: { turn: AgentConversationTurn }) {

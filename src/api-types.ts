@@ -110,10 +110,60 @@ export type AgentConversationTurn = {
   domain: string
   entities: Record<string, unknown>
   capabilities: string[]
+  page_context?: PageContext
   trace_events: AgentTraceEvent[]
   reasoning_trace: ReasoningTraceStep[]
   tool_calls: AgentToolCall[]
+  ui_blocks?: AgentUIBlock[]
   approval_request: AgentApprovalRequest | null
+}
+
+export type AgentUIBlock =
+  | {
+      type: 'text'
+      props?: { title?: string; body?: string }
+    }
+  | {
+      type: 'repo_card'
+      props?: Record<string, unknown>
+    }
+  | {
+      type: 'pr_table'
+      props?: { rows?: Array<Record<string, unknown>> }
+    }
+  | {
+      type: 'check_summary'
+      props?: { checks?: Array<Record<string, unknown>> }
+    }
+  | {
+      type: 'log_excerpt'
+      props?: { title?: string; lines?: string[]; text?: string }
+    }
+  | {
+      type: 'approval_card'
+      props?: { status?: string; actions?: Array<Record<string, unknown>> }
+    }
+  | {
+      type: 'config_diff'
+      props?: { files?: Array<Record<string, unknown>> }
+    }
+  | {
+      type: string
+      props?: Record<string, unknown>
+    }
+
+export type PageContext = {
+  route: string
+  locale?: string
+  timezone?: string
+  user_role?: string
+  selected_resource?: {
+    type: 'project' | 'repository'
+    id: string
+    name: string
+  }
+  visible_fields?: Record<string, unknown>
+  recent_actions?: Array<Record<string, unknown>>
 }
 
 export type AgentTraceEvent = {

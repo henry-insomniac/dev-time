@@ -61,6 +61,19 @@ describe('Dev Time Agent conversation', () => {
         expect(JSON.parse(String(init.body))).toEqual({
           message: '为什么是高风险？',
           risk_assessment_id: 'risk_123',
+          page_context: expect.objectContaining({
+            route: '/',
+            selected_resource: {
+              type: 'project',
+              id: 'project_server',
+              name: 'dev-time-server',
+            },
+            visible_fields: expect.objectContaining({
+              project_name: 'dev-time-server',
+              risk_level: 'high',
+              risk_score: 82,
+            }),
+          }),
         })
         return jsonResponse({
           id: 'turn_123',
@@ -441,6 +454,114 @@ describe('Dev Time Agent conversation', () => {
       'href',
       'https://github.test/henry-insomniac/dev-time/issues/34',
     )
+  })
+
+  it('渲染 Agent UIBlock v1 并保留文本 fallback', () => {
+    render(
+      <AgentConversationList
+        turns={[
+          {
+            id: 'turn_blocks',
+            conversation_id: 'conversation_project_agent',
+            user_message: '诊断当前 PR',
+            agent_response: '文本 fallback 仍然可见。',
+            evidence_refs: ['event_check-run-812'],
+            intent: 'pr_ci_diagnosis',
+            domain: 'github',
+            entities: {},
+            capabilities: [],
+            trace_events: [],
+            reasoning_trace: [],
+            tool_calls: [],
+            approval_request: null,
+            ui_blocks: [
+              {
+                type: 'text',
+                props: { body: '结构化摘要：CI 失败。' },
+              },
+              {
+                type: 'repo_card',
+                props: {
+                  full_name: 'henry-insomniac/dev-time-agent',
+                  risk_level: 'high',
+                },
+              },
+              {
+                type: 'pr_table',
+                props: {
+                  rows: [
+                    {
+                      number: 12,
+                      title: 'Wire AgentProgram flow',
+                      state: 'open',
+                    },
+                  ],
+                },
+              },
+              {
+                type: 'check_summary',
+                props: {
+                  checks: [
+                    {
+                      name: 'eslint',
+                      conclusion: 'failure',
+                      run_id: 812,
+                    },
+                  ],
+                },
+              },
+              {
+                type: 'log_excerpt',
+                props: {
+                  title: 'eslint log',
+                  lines: ['src/router.ts:18 no-unused-vars'],
+                },
+              },
+              {
+                type: 'approval_card',
+                props: {
+                  status: 'pending',
+                  actions: [
+                    {
+                      target_ref: 'pull_request:12',
+                      draft_body: 'Please fix eslint before merge.',
+                    },
+                  ],
+                },
+              },
+              {
+                type: 'config_diff',
+                props: {
+                  files: [
+                    {
+                      path: 'src/router.ts',
+                      before: 'debug: true',
+                      after: 'debug: false',
+                    },
+                  ],
+                },
+              },
+              {
+                type: 'script',
+                props: { html: '<script>alert(1)</script>' },
+              },
+            ],
+          },
+        ]}
+      />,
+    )
+
+    expect(screen.getByText(/文本 fallback 仍然可见/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Agent 结构化内容/i)).toBeInTheDocument()
+    expect(screen.getByText('结构化摘要：CI 失败。')).toBeInTheDocument()
+    expect(screen.getByText('henry-insomniac/dev-time-agent')).toBeInTheDocument()
+    expect(screen.getByRole('table', { name: /PR 列表/i })).toBeInTheDocument()
+    expect(screen.getByText(/Wire AgentProgram flow/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Checks 摘要/i)).toHaveTextContent(/eslint/)
+    expect(screen.getByLabelText(/日志摘录/i)).toHaveTextContent(/no-unused-vars/)
+    expect(screen.getByLabelText(/审批卡片/i)).toHaveTextContent(/pull_request:12/)
+    expect(screen.getByLabelText(/配置变更/i)).toHaveTextContent(/src\/router.ts/)
+    expect(screen.queryByText(/alert\(1\)/)).not.toBeInTheDocument()
   })
 
   it('没有加载真实项目时提示先连接 GitHub 而不是暴露风险 404', async () => {
